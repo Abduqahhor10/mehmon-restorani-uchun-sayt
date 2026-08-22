@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mehmon_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: mehmon_db
+      POSTGRES_USER: mehmon_user
+      POSTGRES_PASSWORD: mehmon_secure_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mehmon_backend
+    restart: always
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=mehmon-secret-production-key-2026
+      - DB_NAME=mehmon_db
+      - DB_USER=mehmon_user
+      - DB_PASSWORD=mehmon_secure_password_2026
+      - DB_HOST=db
+      - DB_PORT=5432
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/media:/app/media
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mehmon_client_menu
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: mehmon_admin_panel
+    restart: always
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

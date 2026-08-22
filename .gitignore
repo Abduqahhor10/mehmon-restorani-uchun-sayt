@@ -1,0 +1,9 @@
+# Backend ichidagilar uchun
+backend/venv/
+backend/db.sqlite3
+backend/.env
+
+# Frontend (client va admin) uchun
+**/node_modules/
+**/dist/
+.DS_Store
