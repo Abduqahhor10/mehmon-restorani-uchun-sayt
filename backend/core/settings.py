@@ -121,17 +121,30 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': None,  # Return direct lists for menu & admin smoothly
 }
 
-# CORS & CSRF Settings for Server 1 (Client) & Server 2 (Admin)
-CORS_ALLOW_ALL_ORIGINS = True  # Permissive for local dev & twin server testing
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:3000",
-]
+# CORS & CSRF Settings for Client & Admin (Local + Production)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -140,9 +153,20 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
     "http://127.0.0.1:3000",
+    "https://*.vercel.app",
+    "https://*.netlify.app",
+    "https://*.onrender.com",
+    "https://*.railway.app",
+    "https://*.koyeb.app",
 ]
+
+# Additional trusted origins from environment variable if provided
+EXTRA_CSRF = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if EXTRA_CSRF:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in EXTRA_CSRF.split(',') if origin.strip()])
 
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_HTTPONLY = False  # Allows JS to read csrf token if needed
+CSRF_COOKIE_HTTPONLY = False
+
