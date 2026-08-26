@@ -7,10 +7,10 @@ export default function CategoryFilter({ categories, activeCategoryId, onSelectC
 
   const getCategoryName = (cat) => {
     if (!cat) return '';
-    const lang = i18n.language;
-    if (lang === 'ru' && cat.name_ru) return cat.name_ru;
-    if (lang === 'en' && cat.name_en) return cat.name_en;
-    return cat.name_uz || cat.name_en || cat.name_ru;
+    const lang = (i18n.language || 'uz').toLowerCase();
+    if (lang.startsWith('ru') && cat.name_ru) return cat.name_ru;
+    if (lang.startsWith('en') && cat.name_en) return cat.name_en;
+    return cat.name_uz || cat.name_ru || cat.name_en;
   };
 
   const sortedCategories = React.useMemo(() => {

@@ -5,7 +5,7 @@ const resources = {
   uz: {
     translation: {
       admin: {
-        welcome: 'Hush kelibsiz admin',
+        welcome: 'Xush kelibsiz, admin',
         title: 'Boshqaruv Paneli',
         products_tab: 'Taomlar',
         categories_tab: 'Kategoriyalar',
