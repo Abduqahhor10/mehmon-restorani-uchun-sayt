@@ -25,9 +25,13 @@ const resources = {
         hide_details: 'Yopish',
         loading: 'Taomlar yuklanmoqda...',
         items_count: 'ta taom',
+        recommended: 'Tavsiya etiladi',
+        chef_choice: 'Oshpaz tavsiyasi',
+        theme_day: 'Kunduzgi rejim',
+        theme_night: 'Kechqurungi rejim',
       },
       footer: {
-        copyright: 'Created by @Sunnataliyev and @AnakinSkaywalker'
+        copyright: 'Created by @Sunnatal1yev and @AnakinSkaywalker'
       }
     }
   },
@@ -54,9 +58,13 @@ const resources = {
         hide_details: 'Скрыть',
         loading: 'Загрузка меню...',
         items_count: 'блюд',
+        recommended: 'Рекомендуем',
+        chef_choice: 'Выбор шефа',
+        theme_day: 'Дневной режим',
+        theme_night: 'Ночной режим',
       },
       footer: {
-        copyright: 'Created by @Sunnataliyev and @AnakinSkaywalker'
+        copyright: 'Created by @Sunnatal1yev and @AnakinSkaywalker'
       }
     }
   },
@@ -83,9 +91,13 @@ const resources = {
         hide_details: 'Hide',
         loading: 'Loading dishes...',
         items_count: 'dishes',
+        recommended: 'Recommended',
+        chef_choice: 'Chef\'s Choice',
+        theme_day: 'Day Mode',
+        theme_night: 'Night Mode',
       },
       footer: {
-        copyright: 'Created by @Sunnataliyev and @AnakinSkaywalker'
+        copyright: 'Created by @Sunnatal1yev and @AnakinSkaywalker'
       }
     }
   }

@@ -2,10 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark Mode (Default / Kechqurungi) */
+  --bg-main: #1F1915;
+  --bg-card: #2B231D;
+  --bg-card-hover: #352C25;
+  --bg-sidebar: #16120F;
+  --bg-subtle: #16120F;
+  --bg-input: #1F1915;
+  
+  --text-main: #F5EBE0;
+  --text-muted: #A89F91;
+  --color-gold: #D4A359;
+  --color-gold-hover: #B8863B;
+  --color-gold-light: #F4E2C7;
+  --color-gold-muted: #C5A880;
+
+  --border-main: #3D332B;
+  --border-subtle: rgba(61, 51, 43, 0.6);
+  --border-gold: rgba(212, 163, 89, 0.3);
+
+  --shadow-glow: 0 0 25px rgba(212, 163, 89, 0.25);
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="light"], .light {
+  /* Light Mode (Kunduzgi - Qaymoq rang fon, tilla rang yozuv va bezaklar) */
+  --bg-main: #FAF6F0;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFBF5;
+  --bg-sidebar: #F2EAE0;
+  --bg-subtle: #F3ECE2;
+  --bg-input: #F8F3EC;
+  
+  --text-main: #241A13;
+  --text-muted: #786A5C;
+  --color-gold: #A26F22;
+  --color-gold-hover: #8A5B17;
+  --color-gold-light: #6E460E;
+  --color-gold-muted: #96703B;
+
+  --border-main: #E5D7C3;
+  --border-subtle: rgba(229, 215, 195, 0.8);
+  --border-gold: rgba(162, 111, 34, 0.35);
+
+  --shadow-glow: 0 6px 25px rgba(162, 111, 34, 0.18);
+  --shadow-card: 0 8px 30px rgba(162, 111, 34, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
 @layer base {
   body {
-    @apply bg-[#1F1915] text-[#F5EBE0] antialiased selection:bg-[#D4A359] selection:text-[#1F1915];
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::selection {
+    background-color: #D4A359;
+    color: #1F1915;
   }
 
   ::-webkit-scrollbar {
@@ -13,14 +69,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #16120F;
+    background: var(--bg-sidebar);
   }
   ::-webkit-scrollbar-thumb {
-    background: #3D332B;
+    background: var(--border-main);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #D4A359;
+    background: var(--color-gold);
   }
 }
 

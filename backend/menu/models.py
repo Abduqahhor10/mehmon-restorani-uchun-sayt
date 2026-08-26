@@ -1,7 +1,8 @@
 from django.db import models
+from .translator import auto_translate_category, auto_translate_product
 
 class Category(models.Model):
-    name_uz = models.CharField(max_length=150, verbose_name="Kategoriya nomi (UZ)")
+    name_uz = models.CharField(max_length=150, blank=True, default='', verbose_name="Kategoriya nomi (UZ)")
     name_ru = models.CharField(max_length=150, blank=True, default='', verbose_name="Название категории (RU)")
     name_en = models.CharField(max_length=150, blank=True, default='', verbose_name="Category Name (EN)")
     sort_order = models.PositiveIntegerField(default=0, verbose_name="Tartib raqami")
@@ -14,8 +15,12 @@ class Category(models.Model):
         verbose_name_plural = "Categories"
         ordering = ['sort_order', 'id']
 
+    def save(self, *args, **kwargs):
+        auto_translate_category(self)
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.name_uz}"
+        return f"{self.name_uz or self.name_ru or self.name_en or f'Category #{self.id}'}"
 
 
 class Product(models.Model):
@@ -25,8 +30,8 @@ class Product(models.Model):
         on_delete=models.CASCADE,
         verbose_name="Kategoriya"
     )
-    # Multilingual Names (only name_uz is required)
-    name_uz = models.CharField(max_length=200, verbose_name="Taom nomi (UZ)")
+    # Multilingual Names
+    name_uz = models.CharField(max_length=200, blank=True, default='', verbose_name="Taom nomi (UZ)")
     name_ru = models.CharField(max_length=200, blank=True, default='', verbose_name="Название блюда (RU)")
     name_en = models.CharField(max_length=200, blank=True, default='', verbose_name="Dish Name (EN)")
 
@@ -53,7 +58,8 @@ class Product(models.Model):
     image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name="Rasm")
     image_url = models.URLField(max_length=500, blank=True, null=True, default='', verbose_name="Tashqi rasm havolasi (ixtiyoriy)")
 
-
+    # Status and Flags
+    is_recommended = models.BooleanField(default=False, verbose_name="Tavsiya etiladi (Chef's Special)")
     is_active = models.BooleanField(default=True, verbose_name="Mavjud / Faol")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -61,10 +67,14 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Product"
         verbose_name_plural = "Products"
-        ordering = ['-created_at']
+        ordering = ['-is_recommended', '-created_at']
+
+    def save(self, *args, **kwargs):
+        auto_translate_product(self)
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name_uz} ({self.price} UZS)"
+        return f"{self.name_uz or self.name_ru or self.name_en} ({self.price} UZS)"
 
     @property
     def effective_image_url(self):

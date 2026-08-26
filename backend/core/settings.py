@@ -71,7 +71,7 @@ if DATABASE_URL and ('postgres' in DATABASE_URL or 'postgresql' in DATABASE_URL)
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=600,
+            conn_max_age=0,
             ssl_require=True
         )
     }
@@ -109,6 +109,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework settings
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
@@ -117,7 +121,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': None,  # Return direct lists for menu & admin smoothly
 }
 
-# CORS Settings for Server 1 (Client) & Server 2 (Admin)
+# CORS & CSRF Settings for Server 1 (Client) & Server 2 (Admin)
 CORS_ALLOW_ALL_ORIGINS = True  # Permissive for local dev & twin server testing
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -128,3 +132,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:3000",
+]
+
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Allows JS to read csrf token if needed

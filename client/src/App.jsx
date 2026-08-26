@@ -6,9 +6,11 @@ import ProductCard from './components/ProductCard';
 import Footer from './components/Footer';
 import { getCategories, getProducts } from './services/api';
 import { Utensils, ChefHat, Loader2 } from 'lucide-react';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
-export default function App() {
-  const { t, i18n } = useTranslation();
+function MenuContent() {
+  const { t } = useTranslation();
+  const { isLight } = useTheme();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
@@ -23,7 +25,7 @@ export default function App() {
         getProducts(),
       ]);
       
-      // Directly set the database state (if empty in DB, it becomes empty on menu)
+      // Directly set the database state
       if (Array.isArray(catsRes)) {
         setCategories(catsRes);
       }
@@ -41,8 +43,8 @@ export default function App() {
     // Initial fetch
     fetchLiveData();
 
-    // Auto-refresh polling every 3 seconds for live sync with Admin Panel
-    const interval = setInterval(fetchLiveData, 3000);
+    // Auto-refresh polling every 10 seconds for live sync with Admin Panel
+    const interval = setInterval(fetchLiveData, 10000);
 
     // Refresh immediately when window / browser tab gains focus
     const handleFocus = () => fetchLiveData();
@@ -54,9 +56,9 @@ export default function App() {
     };
   }, []);
 
-  // Filter products based on search and selected category
+  // Filter and sort products (recommended dishes always on top)
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const list = products.filter((p) => {
       // Must be active
       if (p.is_active === false) return false;
 
@@ -76,29 +78,36 @@ export default function App() {
 
       return true;
     });
+
+    // Ensure recommended dishes appear first
+    return list.sort((a, b) => {
+      const recA = a.is_recommended ? 1 : 0;
+      const recB = b.is_recommended ? 1 : 0;
+      return recB - recA;
+    });
   }, [products, activeCategoryId, searchQuery]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1F1915] text-[#F5EBE0] selection:bg-[#D4A359] selection:text-[#1F1915]">
+    <div className="min-h-screen flex flex-col bg-mehmon-bg text-mehmon-text transition-colors duration-300">
       
-      {/* Header with Official Logo */}
+      {/* Header with Official Logo & Theme Switcher */}
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {/* Hero Atmosphere Section */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-[#2B231D] to-[#1F1915] border-b border-[#3D332B]/50 py-10 sm:py-14">
+      <div className="relative overflow-hidden bg-gradient-to-b from-mehmon-card via-mehmon-card/60 to-mehmon-bg border-b border-mehmon-border py-10 sm:py-14 transition-colors duration-300">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#D4A359_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1F1915]/80 border border-[#D4A359]/30 text-xs font-semibold text-[#D4A359] mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-mehmon-bg/80 border border-mehmon-gold/30 text-xs font-semibold text-mehmon-gold mb-4 shadow-sm">
             <ChefHat className="w-4 h-4" />
             <span>{t('brand.restaurant')}</span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-[#F5EBE0] mb-3">
-            {t('brand.name')} <span className="text-[#D4A359]">{t('brand.restaurant')}</span>
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-mehmon-text mb-3">
+            {t('brand.name')} <span className="text-mehmon-gold">{t('brand.restaurant')}</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-[#A89F91] max-w-xl mx-auto font-light leading-relaxed">
+          <p className="text-sm sm:text-base text-mehmon-muted max-w-xl mx-auto font-light leading-relaxed">
             {t('brand.slogan')}
           </p>
         </div>
@@ -109,7 +118,7 @@ export default function App() {
         
         {/* Sticky Category Tabs */}
         {categories.length > 0 && (
-          <div className="sticky top-20 z-30 bg-[#1F1915]/95 backdrop-blur-md pb-3 pt-1 border-b border-[#3D332B]/40 mb-8">
+          <div className="sticky top-20 z-30 bg-mehmon-bg/95 backdrop-blur-md pb-3 pt-1 border-b border-mehmon-border mb-8 transition-colors duration-300">
             <CategoryFilter
               categories={categories}
               activeCategoryId={activeCategoryId}
@@ -120,11 +129,11 @@ export default function App() {
 
         {/* Counter Info */}
         <div className="flex items-center justify-between mb-6 px-1">
-          <span className="text-xs font-medium text-[#A89F91]">
+          <span className="text-xs font-medium text-mehmon-muted">
             {filteredProducts.length} {t('nav.items_count')}
           </span>
           {searchQuery && (
-            <span className="text-xs text-[#D4A359] italic">
+            <span className="text-xs text-mehmon-gold italic font-semibold">
               "{searchQuery}"
             </span>
           )}
@@ -133,7 +142,7 @@ export default function App() {
         {/* Product Grid or Empty State */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-[#D4A359] animate-spin" />
+            <Loader2 className="w-8 h-8 text-mehmon-gold animate-spin" />
           </div>
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -142,14 +151,14 @@ export default function App() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-[#2B231D]/40 rounded-3xl border border-[#3D332B] px-4 my-8">
-            <div className="w-14 h-14 rounded-full bg-[#2B231D] border border-[#D4A359]/30 flex items-center justify-center mx-auto mb-4 text-[#D4A359]">
+          <div className="text-center py-20 bg-mehmon-card/60 rounded-3xl border border-mehmon-border px-4 my-8 shadow-card-custom">
+            <div className="w-14 h-14 rounded-full bg-mehmon-subtle border border-mehmon-gold/30 flex items-center justify-center mx-auto mb-4 text-mehmon-gold">
               <Utensils className="w-6 h-6" />
             </div>
-            <h3 className="font-serif text-lg font-bold text-[#F5EBE0] mb-1">
+            <h3 className="font-serif text-lg font-bold text-mehmon-text mb-1">
               {searchQuery ? t('nav.no_products_found') : 'Menyuda hozircha taomlar mavjud emas'}
             </h3>
-            <p className="text-xs text-[#A89F91] max-w-md mx-auto">
+            <p className="text-xs text-mehmon-muted max-w-md mx-auto">
               {searchQuery
                 ? t('nav.try_other_search')
                 : 'Admin panel orqali yangi kategoriya va taomlar qo\'shishingiz mumkin.'}
@@ -161,5 +170,13 @@ export default function App() {
       {/* Minimalist Required Footer */}
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MenuContent />
+    </ThemeProvider>
   );
 }

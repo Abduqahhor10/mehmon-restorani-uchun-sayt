@@ -13,24 +13,32 @@ export default function CategoryFilter({ categories, activeCategoryId, onSelectC
     return cat.name_uz || cat.name_en || cat.name_ru;
   };
 
+  const sortedCategories = React.useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const nameA = getCategoryName(a) || '';
+      const nameB = getCategoryName(b) || '';
+      return nameA.localeCompare(nameB, i18n.language || 'uz', { sensitivity: 'base' });
+    });
+  }, [categories, i18n.language]);
+
   return (
-    <div className="py-4 overflow-x-auto no-scrollbar scroll-smooth">
+    <div className="py-2 overflow-x-auto no-scrollbar scroll-smooth">
       <div className="flex items-center gap-2.5 min-w-max px-1">
         {/* All Categories Option */}
         <button
           onClick={() => onSelectCategory(null)}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
             activeCategoryId === null
-              ? 'bg-[#D4A359] text-[#1F1915] font-bold shadow-[0_0_15px_rgba(212,163,89,0.35)] scale-[1.03]'
-              : 'bg-[#2B231D] text-[#F5EBE0]/85 hover:text-[#D4A359] hover:bg-[#352C25] border border-[#3D332B]'
+              ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.03]'
+              : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>{t('nav.all_categories')}</span>
         </button>
 
-        {/* Dynamic Category List */}
-        {categories.map((cat) => {
+        {/* Dynamic Alphabetically Sorted Category List */}
+        {sortedCategories.map((cat) => {
           const isActive = activeCategoryId === cat.id;
           return (
             <button
@@ -38,8 +46,8 @@ export default function CategoryFilter({ categories, activeCategoryId, onSelectC
               onClick={() => onSelectCategory(cat.id)}
               className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-[#D4A359] text-[#1F1915] font-bold shadow-[0_0_15px_rgba(212,163,89,0.35)] scale-[1.03]'
-                  : 'bg-[#2B231D] text-[#F5EBE0]/85 hover:text-[#D4A359] hover:bg-[#352C25] border border-[#3D332B]'
+                  ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.03]'
+                  : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
               }`}
             >
               {getCategoryName(cat)}

@@ -4,7 +4,10 @@ import { X, FolderPlus, Check, Loader2 } from 'lucide-react';
 import { createCategory, updateCategory } from '../services/api';
 
 export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'uz';
+
+  const [activeLangTab, setActiveLangTab] = useState(currentLang);
   const [formData, setFormData] = useState({
     name_uz: '',
     name_ru: '',
@@ -16,6 +19,7 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    setActiveLangTab(i18n.language || 'uz');
     if (categoryToEdit) {
       setFormData({
         name_uz: categoryToEdit.name_uz || '',
@@ -34,24 +38,64 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
       });
     }
     setError(null);
-  }, [categoryToEdit, isOpen]);
+  }, [categoryToEdit, isOpen, i18n.language]);
 
   if (!isOpen) return null;
 
+  // Helpers for labels and placeholders based on active tab
+  const getFieldInfo = () => {
+    if (activeLangTab === 'ru') {
+      return {
+        label: 'Название',
+        placeholder: 'Например: Главные Блюда',
+        valueKey: 'name_ru',
+      };
+    }
+    if (activeLangTab === 'en') {
+      return {
+        label: 'Name',
+        placeholder: 'Example: Main Courses',
+        valueKey: 'name_en',
+      };
+    }
+    return {
+      label: 'Nomi',
+      placeholder: 'Masalan: Asosiy Taomlar',
+      valueKey: 'name_uz',
+    };
+  };
+
+  const fieldInfo = getFieldInfo();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name_uz.trim()) {
-      setError('O\'zbekcha nom kiritilishi shart!');
+    
+    // Check current active language value
+    const currentVal = formData[fieldInfo.valueKey]?.trim();
+    const anyVal = formData.name_uz?.trim() || formData.name_ru?.trim() || formData.name_en?.trim();
+
+    if (!currentVal && !anyVal) {
+      const errText = activeLangTab === 'ru' ? 'Введите название категории!' : (activeLangTab === 'en' ? 'Please enter category name!' : 'Kategoriya nomini kiriting!');
+      setError(errText);
       return;
     }
+
+    // Build payload accurately for the active language so backend can auto-translate missing languages
+    const payload = {
+      name_uz: activeLangTab === 'uz' ? currentVal : (formData.name_uz || ''),
+      name_ru: activeLangTab === 'ru' ? currentVal : (formData.name_ru || ''),
+      name_en: activeLangTab === 'en' ? currentVal : (formData.name_en || ''),
+      sort_order: formData.sort_order || 1,
+      is_active: formData.is_active,
+    };
 
     setLoading(true);
     setError(null);
     try {
       if (categoryToEdit) {
-        await updateCategory(categoryToEdit.id, formData);
+        await updateCategory(categoryToEdit.id, payload);
       } else {
-        await createCategory(formData);
+        await createCategory(payload);
       }
       onSaved();
       onClose();
@@ -60,129 +104,86 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
       const errMsg = err.response?.data
         ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data))
         : err.message;
-      setError('Xatolik yuz berdi: ' + errMsg);
+      setError('Xatolik: ' + errMsg);
     } finally {
-
       setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#2B231D] border border-[#3D332B] w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
+      <div className="bg-mehmon-card border border-mehmon-border w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#3D332B] mb-5">
+        <div className="flex items-center justify-between pb-4 border-b border-mehmon-border mb-5">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#1F1915] border border-[#D4A359]/40 flex items-center justify-center text-[#D4A359]">
+            <div className="w-8 h-8 rounded-lg bg-mehmon-subtle border border-mehmon-gold/40 flex items-center justify-center text-mehmon-gold">
               <FolderPlus className="w-4 h-4" />
             </div>
-            <h3 className="font-serif text-lg font-bold text-[#F5EBE0]">
+            <h3 className="font-serif text-lg font-bold text-mehmon-text">
               {categoryToEdit ? t('admin.edit_category') : t('admin.add_category')}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-[#A89F91] hover:text-[#F5EBE0] transition-colors p-1"
+            className="text-mehmon-muted hover:text-mehmon-text transition-colors p-1"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-xs text-red-200">
+          <div className="mb-4 p-3 bg-red-950/20 border border-red-500/40 rounded-xl text-xs text-red-500">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name UZ */}
+          
+          {/* Category Name Input */}
           <div>
-            <label className="block text-xs font-semibold text-[#D4A359] mb-1.5">
-              {t('admin.name_uz')} *
+            <label className="block text-xs font-semibold text-mehmon-gold mb-1.5">
+              {fieldInfo.label} *
             </label>
             <input
               type="text"
               required
-              value={formData.name_uz}
-              onChange={(e) => setFormData({ ...formData, name_uz: e.target.value })}
-              placeholder="Masalan: Asosiy Taomlar"
-              className="w-full bg-[#1F1915] text-[#F5EBE0] text-sm px-3.5 py-2.5 rounded-xl border border-[#3D332B] focus:border-[#D4A359] focus:outline-none"
+              value={formData[fieldInfo.valueKey]}
+              onChange={(e) => setFormData({ ...formData, [fieldInfo.valueKey]: e.target.value })}
+              placeholder={fieldInfo.placeholder}
+              className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none placeholder-mehmon-muted/50 shadow-inner"
+              autoFocus
             />
           </div>
 
-          {/* Name RU */}
-          <div>
-            <label className="block text-xs font-semibold text-[#A89F91] mb-1.5">
-              {t('admin.name_ru')}
-            </label>
-            <input
-              type="text"
-              value={formData.name_ru}
-              onChange={(e) => setFormData({ ...formData, name_ru: e.target.value })}
-              placeholder="Например: Главные Блюда"
-              className="w-full bg-[#1F1915] text-[#F5EBE0] text-sm px-3.5 py-2.5 rounded-xl border border-[#3D332B] focus:border-[#D4A359] focus:outline-none"
-            />
-          </div>
-
-          {/* Name EN */}
-          <div>
-            <label className="block text-xs font-semibold text-[#A89F91] mb-1.5">
-              {t('admin.name_en')}
-            </label>
-            <input
-              type="text"
-              value={formData.name_en}
-              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-              placeholder="Example: Main Courses"
-              className="w-full bg-[#1F1915] text-[#F5EBE0] text-sm px-3.5 py-2.5 rounded-xl border border-[#3D332B] focus:border-[#D4A359] focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            {/* Sort Order */}
-            <div>
-              <label className="block text-xs font-semibold text-[#A89F91] mb-1.5">
-                {t('admin.sort_order')}
-              </label>
+          {/* Active Status Toggle */}
+          <div className="pt-2">
+            <label className="flex items-center gap-3 cursor-pointer py-3 px-3.5 rounded-xl bg-mehmon-subtle border border-mehmon-border hover:border-mehmon-gold/40 transition-colors">
               <input
-                type="number"
-                min="0"
-                value={formData.sort_order}
-                onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#1F1915] text-[#F5EBE0] text-sm px-3.5 py-2.5 rounded-xl border border-[#3D332B] focus:border-[#D4A359] focus:outline-none"
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="w-4 h-4 text-[#D4A359] rounded bg-mehmon-card border-mehmon-border focus:ring-0 accent-[#D4A359]"
               />
-            </div>
-
-            {/* Active Status Toggle */}
-            <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-3 cursor-pointer py-2.5 px-3 rounded-xl bg-[#1F1915] border border-[#3D332B]">
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-[#D4A359] rounded bg-[#2B231D] border-[#3D332B] focus:ring-0 accent-[#D4A359]"
-                />
-                <span className="text-xs font-semibold text-[#F5EBE0]">
-                  {t('admin.active')}
-                </span>
-              </label>
-            </div>
+              <span className="text-xs font-semibold text-mehmon-text">
+                {t('admin.active')}
+              </span>
+            </label>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-5 border-t border-[#3D332B]">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-mehmon-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-[#1F1915] hover:bg-[#16120F] text-[#A89F91] hover:text-[#F5EBE0] text-xs font-semibold border border-[#3D332B] transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-mehmon-input hover:bg-mehmon-subtle text-mehmon-muted hover:text-mehmon-text text-xs font-semibold border border-mehmon-border transition-colors"
             >
               {t('admin.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl bg-[#D4A359] hover:bg-[#B8863B] text-[#1F1915] font-bold text-xs flex items-center gap-2 shadow-[0_4px_15px_rgba(212,163,89,0.3)] disabled:opacity-50 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D4A359] to-[#B8863B] hover:opacity-95 text-[#1F1915] font-bold text-xs flex items-center gap-2 shadow-[0_4px_15px_rgba(212,163,89,0.3)] disabled:opacity-50 transition-all"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

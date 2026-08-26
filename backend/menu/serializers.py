@@ -17,6 +17,11 @@ class CategorySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+        extra_kwargs = {
+            'name_uz': {'required': False, 'allow_blank': True},
+            'name_ru': {'required': False, 'allow_blank': True},
+            'name_en': {'required': False, 'allow_blank': True},
+        }
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -48,11 +53,13 @@ class ProductSerializer(serializers.ModelSerializer):
             'image',
             'image_url',
             'effective_image_url',
+            'is_recommended',
             'is_active',
             'created_at',
             'updated_at',
         ]
         extra_kwargs = {
+            'name_uz': {'required': False, 'allow_blank': True},
             'name_ru': {'required': False, 'allow_blank': True},
             'name_en': {'required': False, 'allow_blank': True},
             'description_uz': {'required': False, 'allow_blank': True},

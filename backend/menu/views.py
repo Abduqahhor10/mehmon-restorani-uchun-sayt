@@ -32,6 +32,20 @@ class CategoryViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(detail=False, methods=['post'], url_path='delete-selected')
+    def delete_selected(self, request):
+        """
+        Delete selected categories by IDs.
+        """
+        ids = request.data.get('ids', [])
+        if isinstance(ids, list) and ids:
+            count, _ = Category.objects.filter(id__in=ids).delete()
+            return Response(
+                {"message": f"Successfully deleted {count} categories."},
+                status=status.HTTP_200_OK
+            )
+        return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     """
@@ -46,8 +60,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         'name_uz', 'name_ru', 'name_en',
         'description_uz', 'description_ru', 'description_en'
     ]
-    ordering_fields = ['price', 'created_at', 'portion_weight', 'calories']
-    ordering = ['-created_at']
+    ordering_fields = ['is_recommended', 'price', 'created_at', 'portion_weight', 'calories']
+    ordering = ['-is_recommended', '-created_at']
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -68,6 +82,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(detail=False, methods=['post'], url_path='delete-selected')
+    def delete_selected(self, request):
+        """
+        Delete selected products by IDs.
+        """
+        ids = request.data.get('ids', [])
+        if isinstance(ids, list) and ids:
+            count, _ = Product.objects.filter(id__in=ids).delete()
+            return Response(
+                {"message": f"Successfully deleted {count} products."},
+                status=status.HTTP_200_OK
+            )
+        return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['post'])
     def duplicate(self, request, pk=None):
         """
@@ -76,9 +104,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         original = self.get_object()
         new_product = Product.objects.create(
             category=original.category,
-            name_uz=f"{original.name_uz} (Nusxa)",
-            name_ru=f"{original.name_ru} (Копия)",
-            name_en=f"{original.name_en} (Copy)",
+            name_uz=original.name_uz,
+            name_ru=original.name_ru,
+            name_en=original.name_en,
             description_uz=original.description_uz,
             description_ru=original.description_ru,
             description_en=original.description_en,
@@ -90,6 +118,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             carbs=original.carbs,
             image=original.image,
             image_url=original.image_url,
+            is_recommended=original.is_recommended,
             is_active=original.is_active,
         )
         serializer = self.get_serializer(new_product)

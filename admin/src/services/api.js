@@ -33,6 +33,11 @@ export const deleteAllCategories = async () => {
   return response.data;
 };
 
+export const deleteSelectedCategories = async (ids) => {
+  const response = await apiClient.post('/categories/delete-selected/', { ids });
+  return response.data;
+};
+
 // Products API
 export const getProducts = async (params = {}) => {
   const response = await apiClient.get('/products/', { params });
@@ -67,8 +72,14 @@ export const deleteAllProducts = async () => {
   return response.data;
 };
 
+export const deleteSelectedProducts = async (ids) => {
+  const response = await apiClient.post('/products/delete-selected/', { ids });
+  return response.data;
+};
+
 export const duplicateProduct = async (id) => {
   const response = await apiClient.post(`/products/${id}/duplicate/`);
   return response.data;
 };
+
 

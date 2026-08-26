@@ -9,8 +9,9 @@ import CategoryModal from './components/CategoryModal';
 import ProductModal from './components/ProductModal';
 import { getCategories, getProducts } from './services/api';
 import { Loader2 } from 'lucide-react';
+import { ThemeProvider } from './context/ThemeContext';
 
-export default function App() {
+function AdminContent() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('products'); // 'products' | 'categories'
   const [categories, setCategories] = useState([]);
@@ -25,6 +26,7 @@ export default function App() {
   const [productToEdit, setProductToEdit] = useState(null);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [cats, prods] = await Promise.all([
         getCategories(),
@@ -78,7 +80,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1F1915] text-[#F5EBE0] selection:bg-[#D4A359] selection:text-[#1F1915]">
+    <div className="min-h-screen flex flex-col bg-mehmon-bg text-mehmon-text transition-colors duration-300">
       
       {/* Admin Header */}
       <AdminHeader />
@@ -99,7 +101,7 @@ export default function App() {
           
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-[#D4A359] animate-spin" />
+              <Loader2 className="w-8 h-8 text-mehmon-gold animate-spin" />
             </div>
           ) : activeTab === 'products' ? (
             <ProductsTab
@@ -146,5 +148,13 @@ export default function App() {
       />
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AdminContent />
+    </ThemeProvider>
   );
 }

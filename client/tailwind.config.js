@@ -4,21 +4,26 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
         mehmon: {
-          bg: '#1F1915',
-          card: '#2B231D',
-          'card-hover': '#352C25',
-          dark: '#16120F',
-          gold: '#D4A359',
-          'gold-hover': '#B8863B',
-          'gold-light': '#F4E2C7',
-          'gold-muted': '#C5A880',
-          border: '#3D332B',
+          bg: 'var(--bg-main)',
+          card: 'var(--bg-card)',
+          'card-hover': 'var(--bg-card-hover)',
+          subtle: 'var(--bg-subtle)',
+          input: 'var(--bg-input)',
+          dark: 'var(--bg-dark)',
+          gold: 'var(--color-gold)',
+          'gold-hover': 'var(--color-gold-hover)',
+          'gold-light': 'var(--color-gold-light)',
+          'gold-muted': 'var(--color-gold-muted)',
+          border: 'var(--border-main)',
+          'border-subtle': 'var(--border-subtle)',
+          text: 'var(--text-main)',
+          muted: 'var(--text-muted)',
           cream: '#F5EBE0',
-          muted: '#A89F91',
         }
       },
       fontFamily: {
@@ -26,8 +31,9 @@ export default {
         serif: ['Playfair Display', 'serif'],
       },
       boxShadow: {
-        'gold-glow': '0 0 20px rgba(212, 163, 89, 0.25)',
-        'gold-subtle': '0 4px 20px rgba(0, 0, 0, 0.4)',
+        'gold-glow': 'var(--shadow-glow)',
+        'gold-subtle': 'var(--shadow-subtle)',
+        'card-custom': 'var(--shadow-card)',
       }
     },
   },

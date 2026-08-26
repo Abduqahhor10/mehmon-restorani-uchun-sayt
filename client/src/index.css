@@ -2,10 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark Mode (Default / Kechqurungi) */
+  --bg-main: #1F1915;
+  --bg-hero: #2B231D;
+  --bg-card: #2B231D;
+  --bg-card-hover: #352C25;
+  --bg-subtle: #16120F;
+  --bg-input: #2B231D;
+  --bg-dark: #16120F;
+  
+  --text-main: #F5EBE0;
+  --text-muted: #A89F91;
+  --color-gold: #D4A359;
+  --color-gold-hover: #B8863B;
+  --color-gold-light: #F4E2C7;
+  --color-gold-muted: #C5A880;
+
+  --border-main: #3D332B;
+  --border-subtle: rgba(61, 51, 43, 0.6);
+  --border-gold: rgba(212, 163, 89, 0.3);
+
+  --shadow-glow: 0 0 25px rgba(212, 163, 89, 0.2);
+  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="light"], .light {
+  /* Light Mode (Kunduzgi - Qaymoq rang fon, tilla rang yozuv va bezaklar) */
+  --bg-main: #FAF6F0;
+  --bg-hero: #EFE4D3;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFBF5;
+  --bg-subtle: #F3EBE0;
+  --bg-input: #F3ECE2;
+  --bg-dark: #ECE3D6;
+  
+  --text-main: #241A13;
+  --text-muted: #786A5C;
+  --color-gold: #A26F22;
+  --color-gold-hover: #8A5B17;
+  --color-gold-light: #6E460E;
+  --color-gold-muted: #96703B;
+
+  --border-main: #E5D7C3;
+  --border-subtle: rgba(229, 215, 195, 0.8);
+  --border-gold: rgba(162, 111, 34, 0.35);
+
+  --shadow-glow: 0 6px 25px rgba(162, 111, 34, 0.18);
+  --shadow-subtle: 0 4px 20px rgba(162, 111, 34, 0.08);
+  --shadow-card: 0 8px 30px rgba(162, 111, 34, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
 @layer base {
   body {
-    @apply bg-[#1F1915] text-[#F5EBE0] antialiased selection:bg-[#D4A359] selection:text-[#1F1915];
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::selection {
+    background-color: #D4A359;
+    color: #1F1915;
   }
 
   /* Custom smooth scrollbar */
@@ -14,33 +74,37 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #1F1915;
+    background: var(--bg-main);
   }
   ::-webkit-scrollbar-thumb {
-    background: #3D332B;
+    background: var(--border-main);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #D4A359;
+    background: var(--color-gold);
   }
 }
 
 /* Luxury card glow & transition effects */
 .glass-panel {
-  background: rgba(43, 35, 29, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(212, 163, 89, 0.15);
 }
 
 .gold-gradient-text {
-  background: linear-gradient(135deg, #FFF0D6 0%, #D4A359 50%, #B8863B 100%);
+  background: linear-gradient(135deg, #D4A359 0%, #B8863B 50%, #946116 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .gold-gradient-text, .light .gold-gradient-text {
+  background: linear-gradient(135deg, #A26F22 0%, #B8863B 50%, #7E5110 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gold-gradient-bg {
-  background: linear-gradient(135deg, #E2B974 0%, #D4A359 50%, #A87830 100%);
+  background: linear-gradient(135deg, #E2B974 0%, #D4A359 50%, #B8863B 100%);
 }
 
 .no-scrollbar::-webkit-scrollbar {
