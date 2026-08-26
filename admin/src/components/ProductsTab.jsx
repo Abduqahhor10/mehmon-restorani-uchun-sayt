@@ -243,33 +243,42 @@ export default function ProductsTab({
 
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <button
-          onClick={() => setSelectedCatId(null)}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-            selectedCatId === null
-              ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_2px_10px_rgba(212,163,89,0.25)]'
-              : 'bg-mehmon-card text-mehmon-muted hover:text-mehmon-text border border-mehmon-border'
-          }`}
-        >
-          {t('admin.all')} ({products.length})
-        </button>
-        {[...categories]
-          .sort((a, b) => (getCatName(a) || '').localeCompare(getCatName(b) || '', i18n.language || 'uz', { sensitivity: 'base' }))
-          .map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCatId(c.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                selectedCatId === c.id
-                  ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_2px_10px_rgba(212,163,89,0.25)]'
-                  : 'bg-mehmon-card text-mehmon-muted hover:text-mehmon-text border border-mehmon-border'
-              }`}
-            >
-              {getCatName(c)} ({products.filter(p => p.category === c.id).length})
-            </button>
-          ))}
+      {/* Category Filter Chips Bar (Single-Row Horizontal Scroll) */}
+      <div className="relative w-full">
+        <div className="flex items-center flex-nowrap gap-2 overflow-x-auto scroll-smooth py-1.5 px-0.5 scrollbar-none no-scrollbar">
+          {/* All Category Pill */}
+          <button
+            onClick={() => setSelectedCatId(null)}
+            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 select-none ${
+              selectedCatId === null
+                ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.02]'
+                : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
+            }`}
+          >
+            {t('admin.all')} ({products.length})
+          </button>
+
+          {/* Individual Category Pills */}
+          {[...categories]
+            .sort((a, b) => (getCatName(a) || '').localeCompare(getCatName(b) || '', i18n.language || 'uz', { sensitivity: 'base' }))
+            .map((c) => {
+              const isSelected = selectedCatId === c.id;
+              const count = products.filter((p) => p.category === c.id).length;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCatId(c.id)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 select-none ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.02]'
+                      : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
+                  }`}
+                >
+                  {getCatName(c)} ({count})
+                </button>
+              );
+            })}
+        </div>
       </div>
 
       {/* Products Grid */}
