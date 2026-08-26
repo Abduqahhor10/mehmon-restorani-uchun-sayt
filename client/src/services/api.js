@@ -10,6 +10,9 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8000/api';
     }
   }
+  console.error(
+    "⚠️ [Mehmon API Warning]: VITE_API_URL sozlanmagan! Serverga deploy qilinganda Vercel/Netlify Environment Variables'ga VITE_API_URL=<backend-url>/api qo'shing."
+  );
   return '/api';
 };
 
