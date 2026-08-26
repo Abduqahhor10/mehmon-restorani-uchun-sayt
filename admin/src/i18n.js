@@ -70,6 +70,12 @@ const resources = {
         logging_in: 'Kirilmoqda...',
         theme_day: 'Kunduzgi rejim',
         theme_night: 'Kechqurungi rejim',
+        all: 'Barchasi',
+        select_mode: 'Belgilash',
+        select_all: 'Barchasini belgilash',
+        unselect_all: 'Belgilashni yechish',
+        selected_count: '{{count}} ta tanlandi',
+        delete_selected: 'O\'chirish ({{count}})',
       }
     }
   },
@@ -141,6 +147,12 @@ const resources = {
         logging_in: 'Вход в систему...',
         theme_day: 'Дневной режим',
         theme_night: 'Ночной режим',
+        all: 'Все',
+        select_mode: 'Выбрать',
+        select_all: 'Выбрать все',
+        unselect_all: 'Снять выбор',
+        selected_count: 'Выбрано: {{count}}',
+        delete_selected: 'Удалить ({{count}})',
       }
     }
   },
@@ -148,15 +160,15 @@ const resources = {
     translation: {
       admin: {
         welcome: 'Welcome admin',
-        title: 'Admin Dashboard',
-        products_tab: 'Products',
+        title: 'Admin Portal',
+        products_tab: 'Dishes',
         categories_tab: 'Categories',
-        add_product: 'Add Product',
+        add_product: 'Add Dish',
         add_category: 'Add Category',
         delete_all: 'Delete All',
-        delete_all_products: 'Delete All Products',
-        delete_all_categories: 'Delete All Categories',
-        edit_product: 'Edit Product',
+        delete_all_products: 'Delete all dishes',
+        delete_all_categories: 'Delete all categories',
+        edit_product: 'Edit Dish',
         edit_category: 'Edit Category',
         duplicate: 'Duplicate',
         edit: 'Edit',
@@ -166,11 +178,11 @@ const resources = {
         search_products: 'Search dishes...',
         search_categories: 'Search categories...',
         no_categories: 'No categories available',
-        no_products: 'No products available',
+        no_products: 'No dishes available',
         active: 'Active',
         inactive: 'Inactive',
         status: 'Status',
-        is_recommended: 'Chef\'s Special (Recommended)',
+        is_recommended: 'Recommended Dish (Hit)',
         recommended_badge: 'Recommended',
         sort_order: 'Sort order',
         name_uz: 'Name (Uzbek)',
@@ -180,54 +192,60 @@ const resources = {
         desc_ru: 'Description (Russian)',
         desc_en: 'Description (English)',
         price: 'Price (UZS)',
-        portion: 'Portion Weight (g)',
+        portion: 'Portion weight (g)',
         calories: 'Calories (kcal)',
         protein: 'Protein (g)',
         fat: 'Fat (g)',
         carbs: 'Carbs (g)',
-        category_select: 'Select Category',
+        category_select: 'Select category',
         image_upload: 'Upload Image',
         image_url: 'Or Image URL',
-        drag_image: 'Click to upload or drag image here',
-        guard_warning: 'Please create a category first!',
-        guard_desc: 'At least one category is required to add a product. Would you like to create a category now?',
+        drag_image: 'Click to upload or drag and drop image here',
+        guard_warning: 'Create a category first!',
+        guard_desc: 'You need at least one category to add dishes. Would you like to create a new category now?',
         go_create_category: 'Create Category',
-        confirm_delete_product: 'Are you sure you want to delete this product?',
+        confirm_delete_product: 'Are you sure you want to delete this dish?',
         confirm_delete_category: 'Are you sure you want to delete this category?',
-        confirm_delete_all_products: 'Warning! Are you sure you want to permanently delete ALL products? This action cannot be undone!',
-        confirm_delete_all_categories: 'Warning! Are you sure you want to permanently delete ALL categories and their products? This action cannot be undone!',
+        confirm_delete_all_products: 'Warning! Are you sure you want to delete ALL dishes? This action cannot be undone!',
+        confirm_delete_all_categories: 'Warning! Are you sure you want to delete ALL categories and their dishes? This action cannot be undone!',
         loading: 'Loading...',
         total_items: 'Total items',
-        login: 'Sign In',
-        logout: 'Log Out',
-        login_title: 'Admin Portal Login',
+        login: 'Login',
+        logout: 'Logout',
+        login_title: 'Sign In to Admin Portal',
         login_subtitle: 'Enter your credentials to access the restaurant management system',
         username_or_email: 'Username or Email',
-        username_placeholder: 'e.g. admin or info@mehmon.uz',
+        username_placeholder: 'Example: admin or info@mehmon.uz',
         password: 'Password',
         password_placeholder: 'Enter your password',
         remember_me: 'Remember me',
         login_error_default: 'Invalid username or password!',
         confirm_logout: 'Are you sure you want to log out?',
         logging_in: 'Signing in...',
-        theme_day: 'Day Mode',
-        theme_night: 'Night Mode',
+        theme_day: 'Day mode',
+        theme_night: 'Night mode',
+        all: 'All',
+        select_mode: 'Select',
+        select_all: 'Select All',
+        unselect_all: 'Deselect All',
+        selected_count: '{{count}} selected',
+        delete_selected: 'Delete ({{count}})',
       }
     }
   }
 };
 
-const savedLang = localStorage.getItem('mehmon_admin_lang') || 'uz';
+const savedLanguage = localStorage.getItem('mehmon_admin_lang') || 'uz';
 
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: savedLang,
+    lng: savedLanguage,
     fallbackLng: 'uz',
     interpolation: {
-      escapeValue: false
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;

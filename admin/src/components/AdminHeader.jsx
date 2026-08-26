@@ -29,7 +29,7 @@ export default function AdminHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-mehmon-sidebar/95 backdrop-blur-md border-b border-mehmon-border h-20 flex items-center px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+    <header className="sticky top-0 z-40 bg-mehmon-sidebar border-b border-mehmon-border h-20 flex items-center px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="w-full flex items-center justify-between gap-4">
         
         {/* Left: Brand Logo - Transparent & Dynamic by Language */}

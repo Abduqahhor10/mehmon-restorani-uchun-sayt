@@ -172,10 +172,10 @@ export default function ProductsTab({
                   <button
                     onClick={handleStartSelection}
                     className="px-3.5 py-2.5 rounded-xl bg-mehmon-input hover:bg-mehmon-subtle text-mehmon-text border border-mehmon-border hover:border-mehmon-gold font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                    title="Taomlarni tanlash rejimiga o'tish"
+                    title={t('admin.select_mode')}
                   >
                     <CheckSquare className="w-4 h-4 text-mehmon-gold" />
-                    <span>Belgilash</span>
+                    <span>{t('admin.select_mode')}</span>
                   </button>
 
                   {/* Barchasini o'chirish */}
@@ -209,12 +209,12 @@ export default function ProductsTab({
                 className="px-3 py-2 rounded-xl bg-mehmon-input hover:bg-mehmon-subtle text-mehmon-text border border-mehmon-border text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
               >
                 <CheckCheck className="w-4 h-4 text-mehmon-gold" />
-                <span>{isAllVisibleSelected ? "Belgilashni yechish" : "Barchasini belgilash"}</span>
+                <span>{isAllVisibleSelected ? t('admin.unselect_all') : t('admin.select_all')}</span>
               </button>
 
               {/* Tanlanganlar soni ko'rsatkichi */}
               <span className="px-3 py-2 rounded-xl bg-mehmon-gold/15 border border-mehmon-gold/40 text-mehmon-gold text-xs font-bold">
-                {selectedIds.length} ta tanlandi
+                {t('admin.selected_count', { count: selectedIds.length })}
               </span>
 
               {/* Tanlanganlarni o'chirish tugmasi */}
@@ -224,7 +224,7 @@ export default function ProductsTab({
                 className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-1.5 shadow-[0_4px_15px_rgba(220,38,38,0.4)] transition-all"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>O'chirish ({selectedIds.length})</span>
+                <span>{t('admin.delete_selected', { count: selectedIds.length })}</span>
               </button>
 
               {/* Belgilashni bekor qilish */}
@@ -233,7 +233,7 @@ export default function ProductsTab({
                 className="px-3 py-2 rounded-xl bg-mehmon-input hover:bg-mehmon-subtle text-mehmon-muted hover:text-mehmon-text border border-mehmon-border text-xs font-semibold flex items-center gap-1 transition-all"
               >
                 <X className="w-4 h-4" />
-                <span>Bekor qilish</span>
+                <span>{t('admin.cancel')}</span>
               </button>
 
             </div>
@@ -253,7 +253,7 @@ export default function ProductsTab({
               : 'bg-mehmon-card text-mehmon-muted hover:text-mehmon-text border border-mehmon-border'
           }`}
         >
-          Barchasi ({products.length})
+          {t('admin.all')} ({products.length})
         </button>
         {[...categories]
           .sort((a, b) => (getCatName(a) || '').localeCompare(getCatName(b) || '', i18n.language || 'uz', { sensitivity: 'base' }))

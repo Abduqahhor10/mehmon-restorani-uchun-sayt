@@ -10,13 +10,24 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     root.setAttribute('data-theme', theme);
+    if (body) body.setAttribute('data-theme', theme);
+
     if (theme === 'light') {
       root.classList.remove('dark');
       root.classList.add('light');
+      if (body) {
+        body.classList.remove('dark');
+        body.classList.add('light');
+      }
     } else {
       root.classList.remove('light');
       root.classList.add('dark');
+      if (body) {
+        body.classList.remove('light');
+        body.classList.add('dark');
+      }
     }
     localStorage.setItem('mehmon_admin_theme', theme);
   }, [theme]);

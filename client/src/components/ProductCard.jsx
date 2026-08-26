@@ -5,9 +5,38 @@ export default function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
   const [imgError, setImgError] = useState(false);
 
+  const FOOD_FALLBACKS = {
+    'чечевичный суп': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
+    'yasmiq sho\'rva': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
+    'lentil soup': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
+    'плов': { uz: "Osh", ru: "Плов", en: "Pilaf" },
+    'osh': { uz: "Osh", ru: "Плов", en: "Pilaf" },
+    'суп': { uz: "Sho'rva", ru: "Суп", en: "Soup" },
+    'sho\'rva': { uz: "Sho'rva", ru: "Суп", en: "Soup" },
+    'лагман': { uz: "Lag'mon", ru: "Лагман", en: "Lagman" },
+    'lag\'mon': { uz: "Lag'mon", ru: "Лагман", en: "Lagman" },
+    'шашлык': { uz: "Shashlik", ru: "Шашлык", en: "Kebab" },
+    'shashlik': { uz: "Shashlik", ru: "Шашлык", en: "Kebab" },
+    'салат': { uz: "Salat", ru: "Салат", en: "Salad" },
+    'salat': { uz: "Salat", ru: "Салат", en: "Salad" },
+    'манты': { uz: "Manti", ru: "Манты", en: "Mantu" },
+    'manti': { uz: "Manti", ru: "Манты", en: "Mantu" },
+    'самса': { uz: "Somsa", ru: "Самса", en: "Samosa" },
+    'somsa': { uz: "Somsa", ru: "Самса", en: "Samosa" },
+  };
+
   // Multilingual helper
   const getLocalized = (fieldUz, fieldRu, fieldEn) => {
     const lang = (i18n.language || 'uz').toLowerCase();
+
+    // Check fallback dictionary
+    const key = (fieldUz || fieldRu || fieldEn || '').toLowerCase().trim();
+    if (FOOD_FALLBACKS[key]) {
+      if (lang.startsWith('ru')) return FOOD_FALLBACKS[key].ru;
+      if (lang.startsWith('en')) return FOOD_FALLBACKS[key].en;
+      return FOOD_FALLBACKS[key].uz;
+    }
+
     if (lang.startsWith('ru')) return fieldRu || fieldUz || fieldEn;
     if (lang.startsWith('en')) return fieldEn || fieldUz || fieldRu;
     return fieldUz || fieldRu || fieldEn;
