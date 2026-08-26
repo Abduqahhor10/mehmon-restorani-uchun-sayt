@@ -180,8 +180,8 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto pr-1 mt-4 space-y-5 flex-1">
           
-          {/* Category & Price & Portion */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Category & Price Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Category Select */}
             <div>
               <label className="block text-xs font-semibold text-mehmon-gold mb-1.5">
@@ -214,21 +214,6 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="68000"
-                className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner"
-              />
-            </div>
-
-            {/* Portion Weight */}
-            <div>
-              <label className="block text-xs font-semibold text-mehmon-muted mb-1.5">
-                {t('admin.portion')}
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.portion_weight}
-                onChange={(e) => setFormData({ ...formData, portion_weight: parseInt(e.target.value) || 0 })}
-                placeholder="350"
                 className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner"
               />
             </div>

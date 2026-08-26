@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Edit2, Copy, Trash2, Scale, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react';
+import { Edit2, Copy, Trash2, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react';
 import { duplicateProduct, deleteProduct } from '../services/api';
 
 export default function ProductCardAdmin({
@@ -136,12 +136,6 @@ export default function ProductCardAdmin({
             <span className="text-mehmon-gold font-bold text-lg font-sans">
               {Number(product.price).toLocaleString()} UZS
             </span>
-            {product.portion_weight > 0 && (
-              <span className="text-xs text-mehmon-muted flex items-center gap-1 font-medium">
-                <Scale className="w-3 h-3 text-mehmon-gold" />
-                {product.portion_weight}g
-              </span>
-            )}
           </div>
         </div>
       </div>

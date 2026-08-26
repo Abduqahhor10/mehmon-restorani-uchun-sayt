@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Scale } from 'lucide-react';
 
 export default function ProductCard({ product }) {
   const { t, i18n } = useTranslation();
@@ -57,14 +56,6 @@ export default function ProductCard({ product }) {
           <div className="absolute top-3 right-3 bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-black text-xs px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 animate-pulse">
             <span>⭐</span>
             <span>{t('nav.recommended')}</span>
-          </div>
-        )}
-
-        {/* Portion Badge Overlay */}
-        {product.portion_weight > 0 && (
-          <div className="absolute bottom-3 right-3 bg-mehmon-dark/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-mehmon-border text-[11px] font-medium text-mehmon-text flex items-center gap-1 shadow-md">
-            <Scale className="w-3 h-3 text-mehmon-gold" />
-            <span>{product.portion_weight} g</span>
           </div>
         )}
       </div>
