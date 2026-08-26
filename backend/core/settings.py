@@ -64,8 +64,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database Configuration (Neon.tech PostgreSQL with SQLite fallback)
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Database Configuration (Neon.tech PostgreSQL persistent cloud database)
+DEFAULT_NEON_DB = 'postgresql://neondb_owner:npg_EfkOKiANYm31@ep-lively-truth-b2444tdn-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
+DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_NEON_DB)
 
 if DATABASE_URL and ('postgres' in DATABASE_URL or 'postgresql' in DATABASE_URL):
     DATABASES = {

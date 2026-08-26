@@ -17,10 +17,10 @@ export default function ProductCardAdmin({
   const [imgError, setImgError] = useState(false);
 
   const getLocalized = (uz, ru, en) => {
-    const lang = i18n.language;
-    if (lang === 'ru' && ru) return ru;
-    if (lang === 'en' && en) return en;
-    return uz || en || ru;
+    const lang = (i18n.language || 'uz').toLowerCase();
+    if (lang.startsWith('ru')) return ru || uz || en;
+    if (lang.startsWith('en')) return en || uz || ru;
+    return uz || ru || en;
   };
 
   const name = getLocalized(product.name_uz, product.name_ru, product.name_en);

@@ -7,10 +7,10 @@ export default function ProductCard({ product }) {
 
   // Multilingual helper
   const getLocalized = (fieldUz, fieldRu, fieldEn) => {
-    const lang = i18n.language;
-    if (lang === 'ru' && fieldRu) return fieldRu;
-    if (lang === 'en' && fieldEn) return fieldEn;
-    return fieldUz || fieldEn || fieldRu;
+    const lang = (i18n.language || 'uz').toLowerCase();
+    if (lang.startsWith('ru')) return fieldRu || fieldUz || fieldEn;
+    if (lang.startsWith('en')) return fieldEn || fieldUz || fieldRu;
+    return fieldUz || fieldRu || fieldEn;
   };
 
   const name = getLocalized(product.name_uz, product.name_ru, product.name_en);

@@ -5,6 +5,10 @@ class Command(BaseCommand):
     help = 'Seeds authentic Mehmon Restaurant initial categories and gourmet products'
 
     def handle(self, *args, **options):
+        if Category.objects.exists() or Product.objects.exists():
+            self.stdout.write("Database already contains categories or products, skipping seed_data.")
+            return
+
         self.stdout.write("Seeding Mehmon Restaurant menu data...")
 
         # Categories

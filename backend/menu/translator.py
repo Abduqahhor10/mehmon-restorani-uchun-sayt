@@ -6,34 +6,75 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Common food dictionary for fast, accurate translations
+FOOD_DICT = {
+    'чечевичный суп': {'uz': "Yasmiq sho'rva", 'ru': "Чечевичный суп", 'en': "Lentil Soup"},
+    'суп': {'uz': "Sho'rva", 'ru': "Суп", 'en': "Soup"},
+    'плов': {'uz': "Osh", 'ru': "Плов", 'en': "Pilaf"},
+    'лагман': {'uz': "Lag'mon", 'ru': "Лагман", 'en': "Lagman"},
+    'манты': {'uz': "Manti", 'ru': "Манты", 'en': "Mantu"},
+    'самса': {'uz': "Somsa", 'ru': "Самса", 'en': "Samosa"},
+    'сомса': {'uz': "Somsa", 'ru': "Самса", 'en': "Samosa"},
+    'шашлык': {'uz': "Shashlik", 'ru': "Шашлык", 'en': "Kebab"},
+    'люля кебаб': {'uz': "Lula kabob", 'ru': "Люля кебаб", 'en': "Lula Kebab"},
+    'салат': {'uz': "Salat", 'ru': "Салат", 'en': "Salad"},
+    'чай': {'uz': "Choy", 'ru': "Чай", 'en': "Tea"},
+    'хлеб': {'uz': "Non", 'ru': "Хлеб", 'en': "Bread"},
+    'лепешка': {'uz': "Non", 'ru': "Лепешка", 'en': "Traditional Bread"},
+}
+
 def translate_text(text, target_lang='uz', source_lang='auto'):
     """
-    Translates text to target_lang using Google Translate GTX endpoint.
+    Translates text with dictionary lookup and multiple Google endpoints fallback.
     """
     if not text or not str(text).strip():
         return ''
     cleaned = str(text).strip()
+    
+    # Check food dictionary
+    lowered = cleaned.lower()
+    if lowered in FOOD_DICT:
+        return FOOD_DICT[lowered].get(target_lang, cleaned)
+
+    # Strategy 1: Google Translate GTX endpoint
     try:
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q=" + urllib.parse.quote(cleaned)
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode('utf-8'))
             parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
-            return ''.join(parts).strip()
+            res = ''.join(parts).strip()
+            if res:
+                return res
     except Exception as e:
-        logger.warning(f"Translation error for '{cleaned}' -> {target_lang}: {e}")
-        return cleaned
+        logger.warning(f"Google GTX translation error: {e}")
+
+    # Strategy 2: Google Dict endpoint
+    try:
+        url2 = f"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={source_lang}&tl={target_lang}&q=" + urllib.parse.quote(cleaned)
+        req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req2, timeout=5) as response2:
+            data2 = json.loads(response2.read().decode('utf-8'))
+            if isinstance(data2, list) and len(data2) > 0:
+                res2 = data2[0]
+                if isinstance(res2, list) and len(res2) > 0:
+                    return str(res2[0]).strip()
+                return str(res2).strip()
+    except Exception as e2:
+        logger.warning(f"Google Dict translation error: {e2}")
+
+    return cleaned
 
 def auto_detect_and_translate(text):
     """
-    Given a single input text in Uzbek or Russian,
+    Given a single input text in Uzbek, Russian, or English,
     automatically detects the script and returns (uz, ru, en).
     """
     if not text or not str(text).strip():
         return '', '', ''
     cleaned = str(text).strip()
     
-    # If text contains Cyrillic characters (Russian)
+    # Check if text contains Cyrillic characters (Russian)
     if re.search(r'[а-яА-ЯёЁ]', cleaned):
         ru = cleaned
         uz = translate_text(ru, 'uz', 'ru')
@@ -48,69 +89,62 @@ def auto_detect_and_translate(text):
 
 def auto_translate_category(category):
     """
-    Auto-translates category names based on single or partial input.
+    Auto-translates category names based on input and corrects Cyrillic/Latin mix-ups.
     """
     uz = (category.name_uz or '').strip()
     ru = (category.name_ru or '').strip()
     en = (category.name_en or '').strip()
 
+    # If name_uz is actually Russian (has Cyrillic)
+    if uz and re.search(r'[а-яА-ЯёЁ]', uz) and not ru:
+        ru = uz
+        uz = ''
+
     primary_text = uz or ru or en
     if not primary_text:
         return
 
-    # If only one language is filled, auto-generate all 3
-    if (uz and not ru and not en) or (ru and not uz and not en) or (en and not uz and not ru):
+    # If only one language is filled or if uz/ru/en need synchronization
+    if not uz or not ru or not en or (uz == ru and re.search(r'[а-яА-ЯёЁ]', uz)):
         t_uz, t_ru, t_en = auto_detect_and_translate(primary_text)
         category.name_uz = t_uz
         category.name_ru = t_ru
         category.name_en = t_en
-    else:
-        if not category.name_uz:
-            category.name_uz = translate_text(category.name_ru or category.name_en, 'uz')
-        if not category.name_ru:
-            category.name_ru = translate_text(category.name_uz or category.name_en, 'ru')
-        if not category.name_en:
-            category.name_en = translate_text(category.name_uz or category.name_ru, 'en')
 
 def auto_translate_product(product):
     """
-    Auto-translates product names and descriptions based on single or partial input.
+    Auto-translates product names and descriptions and corrects Cyrillic/Latin mix-ups.
     """
     name_uz = (product.name_uz or '').strip()
     name_ru = (product.name_ru or '').strip()
     name_en = (product.name_en or '').strip()
 
+    # If name_uz contains Cyrillic and name_ru is empty
+    if name_uz and re.search(r'[а-яА-ЯёЁ]', name_uz) and not name_ru:
+        name_ru = name_uz
+        name_uz = ''
+
     primary_name = name_uz or name_ru or name_en
     if primary_name:
-        if (name_uz and not name_ru and not name_en) or (name_ru and not name_uz and not name_en) or (name_en and not name_uz and not name_ru):
+        if not name_uz or not name_ru or not name_en or (name_uz == name_ru and re.search(r'[а-яА-ЯёЁ]', name_uz)):
             t_uz, t_ru, t_en = auto_detect_and_translate(primary_name)
             product.name_uz = t_uz
             product.name_ru = t_ru
             product.name_en = t_en
-        else:
-            if not product.name_uz:
-                product.name_uz = translate_text(product.name_ru or product.name_en, 'uz')
-            if not product.name_ru:
-                product.name_ru = translate_text(product.name_uz or product.name_en, 'ru')
-            if not product.name_en:
-                product.name_en = translate_text(product.name_uz or product.name_ru, 'en')
 
     # Descriptions auto-translation
     desc_uz = (product.description_uz or '').strip()
     desc_ru = (product.description_ru or '').strip()
     desc_en = (product.description_en or '').strip()
-    primary_desc = desc_uz or desc_ru or desc_en
 
+    if desc_uz and re.search(r'[а-яА-ЯёЁ]', desc_uz) and not desc_ru:
+        desc_ru = desc_uz
+        desc_uz = ''
+
+    primary_desc = desc_uz or desc_ru or desc_en
     if primary_desc:
-        if (desc_uz and not desc_ru and not desc_en) or (desc_ru and not desc_uz and not desc_en) or (desc_en and not desc_uz and not desc_ru):
+        if not desc_uz or not desc_ru or not desc_en:
             t_uz, t_ru, t_en = auto_detect_and_translate(primary_desc)
             product.description_uz = t_uz
             product.description_ru = t_ru
             product.description_en = t_en
-        else:
-            if not product.description_uz and (product.description_ru or product.description_en):
-                product.description_uz = translate_text(product.description_ru or product.description_en, 'uz')
-            if not product.description_ru and (product.description_uz or product.description_en):
-                product.description_ru = translate_text(product.description_uz or product.description_en, 'ru')
-            if not product.description_en and (product.description_uz or product.description_ru):
-                product.description_en = translate_text(product.description_uz or product.description_ru, 'en')
