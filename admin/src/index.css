@@ -26,28 +26,57 @@
   --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
-[data-theme="light"], .light {
+html[data-theme="light"],
+body[data-theme="light"],
+[data-theme="light"],
+.light {
   /* Light Mode (Kunduzgi - Qaymoq rang fon, tilla rang yozuv va bezaklar) */
-  --bg-main: #FAF6F0;
-  --bg-card: #FFFFFF;
-  --bg-card-hover: #FFFBF5;
-  --bg-sidebar: #F2EAE0;
-  --bg-subtle: #F3ECE2;
-  --bg-input: #F8F3EC;
+  --bg-main: #FAF6F0 !important;
+  --bg-card: #FFFFFF !important;
+  --bg-card-hover: #FFFBF5 !important;
+  --bg-sidebar: #F2EAE0 !important;
+  --bg-subtle: #F3ECE2 !important;
+  --bg-input: #F8F3EC !important;
   
-  --text-main: #241A13;
-  --text-muted: #786A5C;
-  --color-gold: #A26F22;
-  --color-gold-hover: #8A5B17;
-  --color-gold-light: #6E460E;
-  --color-gold-muted: #96703B;
+  --text-main: #241A13 !important;
+  --text-muted: #786A5C !important;
+  --color-gold: #A26F22 !important;
+  --color-gold-hover: #8A5B17 !important;
+  --color-gold-light: #6E460E !important;
+  --color-gold-muted: #96703B !important;
 
-  --border-main: #E5D7C3;
-  --border-subtle: rgba(229, 215, 195, 0.8);
-  --border-gold: rgba(162, 111, 34, 0.35);
+  --border-main: #E5D7C3 !important;
+  --border-subtle: rgba(229, 215, 195, 0.8) !important;
+  --border-gold: rgba(162, 111, 34, 0.35) !important;
 
-  --shadow-glow: 0 6px 25px rgba(162, 111, 34, 0.18);
-  --shadow-card: 0 8px 30px rgba(162, 111, 34, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 6px 25px rgba(162, 111, 34, 0.18) !important;
+  --shadow-card: 0 8px 30px rgba(162, 111, 34, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="dark"],
+body[data-theme="dark"],
+[data-theme="dark"],
+.dark {
+  --bg-main: #1F1915 !important;
+  --bg-card: #2B231D !important;
+  --bg-card-hover: #352C25 !important;
+  --bg-sidebar: #16120F !important;
+  --bg-subtle: #16120F !important;
+  --bg-input: #1F1915 !important;
+  
+  --text-main: #F5EBE0 !important;
+  --text-muted: #A89F91 !important;
+  --color-gold: #D4A359 !important;
+  --color-gold-hover: #B8863B !important;
+  --color-gold-light: #F4E2C7 !important;
+  --color-gold-muted: #C5A880 !important;
+
+  --border-main: #3D332B !important;
+  --border-subtle: rgba(61, 51, 43, 0.6) !important;
+  --border-gold: rgba(212, 163, 89, 0.3) !important;
+
+  --shadow-glow: 0 0 25px rgba(212, 163, 89, 0.25) !important;
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
 }
 
 @layer base {
