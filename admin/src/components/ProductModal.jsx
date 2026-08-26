@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Upload, Check, Loader2, Image as ImageIcon, Flame, Globe } from 'lucide-react';
+import { X, Upload, Check, Loader2, Image as ImageIcon, Flame } from 'lucide-react';
 import { createProduct, updateProduct } from '../services/api';
 
 export default function ProductModal({ isOpen, onClose, productToEdit, categories, onSaved }) {
-  const { t, i18n } = useTranslation();
-  const currentLang = i18n.language || 'uz';
+  const { t } = useTranslation();
   
-  const [activeTabLang, setActiveTabLang] = useState(currentLang);
   const [formData, setFormData] = useState({
     category: '',
-    name_uz: '',
-    name_ru: '',
-    name_en: '',
+    name: '',
     price: '',
     portion_weight: 0,
     calories: 0,
@@ -30,13 +26,10 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setActiveTabLang(i18n.language || 'uz');
     if (productToEdit) {
       setFormData({
         category: productToEdit.category || (categories[0]?.id || ''),
-        name_uz: productToEdit.name_uz || '',
-        name_ru: productToEdit.name_ru || '',
-        name_en: productToEdit.name_en || '',
+        name: productToEdit.name_uz || productToEdit.name_ru || productToEdit.name_en || '',
         price: productToEdit.price || '',
         portion_weight: 0,
         calories: 0,
@@ -51,9 +44,7 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     } else {
       setFormData({
         category: categories[0]?.id || '',
-        name_uz: '',
-        name_ru: '',
-        name_en: '',
+        name: '',
         price: '',
         portion_weight: 0,
         calories: 0,
@@ -68,7 +59,7 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     }
     setImageFile(null);
     setError(null);
-  }, [productToEdit, isOpen, categories, i18n.language]);
+  }, [productToEdit, isOpen, categories]);
 
   if (!isOpen) return null;
 
@@ -80,32 +71,11 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     }
   };
 
-  const handleNameChange = (val) => {
-    setFormData((prev) => {
-      const updated = { ...prev };
-      if (activeTabLang === 'uz') updated.name_uz = val;
-      else if (activeTabLang === 'ru') updated.name_ru = val;
-      else if (activeTabLang === 'en') updated.name_en = val;
-      return updated;
-    });
-  };
-
-  const currentNameValue =
-    activeTabLang === 'uz'
-      ? formData.name_uz
-      : activeTabLang === 'ru'
-      ? formData.name_ru
-      : formData.name_en;
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const hasAnyName =
-      (formData.name_uz && formData.name_uz.trim()) ||
-      (formData.name_ru && formData.name_ru.trim()) ||
-      (formData.name_en && formData.name_en.trim());
-
-    if (!hasAnyName) {
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       setError('Iltimos, taom nomini kiriting!');
       return;
     }
@@ -123,9 +93,9 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
 
     const payload = new FormData();
     payload.append('category', formData.category);
-    payload.append('name_uz', formData.name_uz ? formData.name_uz.trim() : '');
-    payload.append('name_ru', formData.name_ru ? formData.name_ru.trim() : '');
-    payload.append('name_en', formData.name_en ? formData.name_en.trim() : '');
+    payload.append('name_uz', trimmedName);
+    payload.append('name_ru', '');
+    payload.append('name_en', '');
     payload.append('price', formData.price);
     payload.append('portion_weight', 0);
     payload.append('calories', 0);
@@ -228,69 +198,21 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
             </div>
           </div>
 
-          {/* Multilingual Name Section */}
-          <div className="bg-mehmon-subtle p-4 rounded-xl border border-mehmon-border space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-mehmon-gold flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" />
-                <span>Taom nomi (Multilingual) *</span>
-              </label>
-
-              {/* Language Switcher Tabs */}
-              <div className="flex items-center gap-1 bg-mehmon-input p-1 rounded-lg border border-mehmon-border">
-                <button
-                  type="button"
-                  onClick={() => setActiveTabLang('uz')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
-                    activeTabLang === 'uz'
-                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
-                      : 'text-mehmon-muted hover:text-mehmon-text'
-                  }`}
-                >
-                  UZ {formData.name_uz ? '✓' : ''}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTabLang('ru')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
-                    activeTabLang === 'ru'
-                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
-                      : 'text-mehmon-muted hover:text-mehmon-text'
-                  }`}
-                >
-                  RU {formData.name_ru ? '✓' : ''}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTabLang('en')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
-                    activeTabLang === 'en'
-                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
-                      : 'text-mehmon-muted hover:text-mehmon-text'
-                  }`}
-                >
-                  EN {formData.name_en ? '✓' : ''}
-                </button>
-              </div>
-            </div>
-
+          {/* Simple Single Name Input */}
+          <div className="bg-mehmon-subtle p-4 rounded-xl border border-mehmon-border space-y-2">
+            <label className="block text-xs font-semibold text-mehmon-gold">
+              Taom nomi *
+            </label>
             <input
               type="text"
               required
-              value={currentNameValue}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={
-                activeTabLang === 'ru'
-                  ? "Название блюда (на русском, например: Праздничный Плов)"
-                  : activeTabLang === 'en'
-                  ? "Dish name (in English, e.g. Royal Festive Pilaf)"
-                  : "Taom nomi (o'zbekcha, masalan: To'y Oshi)"
-              }
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Masalan: To'y Oshi yoki Праздничный Плов"
               className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner"
             />
-
             <p className="text-[11px] text-mehmon-muted">
-              💡 Bitta tilda kiritib saqlasangiz, boshqa tillarga avtomatik tarjima qilinadi.
+              ✨ O'zbekcha yoki Ruscha yozsangiz, tizim avtomatik aniqlab barcha tillarga to'g'irlaydi.
             </p>
           </div>
 
