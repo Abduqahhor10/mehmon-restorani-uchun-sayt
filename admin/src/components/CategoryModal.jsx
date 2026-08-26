@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, FolderPlus, Check, Loader2 } from 'lucide-react';
+import { X, FolderPlus, Check, Loader2, Globe } from 'lucide-react';
 import { createCategory, updateCategory } from '../services/api';
 
 export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved }) {
@@ -42,49 +42,40 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
 
   if (!isOpen) return null;
 
-  // Helpers for labels and placeholders based on active tab
-  const getFieldInfo = () => {
-    if (activeLangTab === 'ru') {
-      return {
-        label: 'Название',
-        placeholder: 'Например: Главные Блюда',
-        valueKey: 'name_ru',
-      };
-    }
-    if (activeLangTab === 'en') {
-      return {
-        label: 'Name',
-        placeholder: 'Example: Main Courses',
-        valueKey: 'name_en',
-      };
-    }
-    return {
-      label: 'Nomi',
-      placeholder: 'Masalan: Asosiy Taomlar',
-      valueKey: 'name_uz',
-    };
+  const handleNameChange = (val) => {
+    setFormData((prev) => {
+      const updated = { ...prev };
+      if (activeLangTab === 'uz') updated.name_uz = val;
+      else if (activeLangTab === 'ru') updated.name_ru = val;
+      else if (activeLangTab === 'en') updated.name_en = val;
+      return updated;
+    });
   };
 
-  const fieldInfo = getFieldInfo();
+  const currentNameValue =
+    activeLangTab === 'uz'
+      ? formData.name_uz
+      : activeLangTab === 'ru'
+      ? formData.name_ru
+      : formData.name_en;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check current active language value
-    const currentVal = formData[fieldInfo.valueKey]?.trim();
-    const anyVal = formData.name_uz?.trim() || formData.name_ru?.trim() || formData.name_en?.trim();
+    const hasAnyName =
+      (formData.name_uz && formData.name_uz.trim()) ||
+      (formData.name_ru && formData.name_ru.trim()) ||
+      (formData.name_en && formData.name_en.trim());
 
-    if (!currentVal && !anyVal) {
-      const errText = activeLangTab === 'ru' ? 'Введите название категории!' : (activeLangTab === 'en' ? 'Please enter category name!' : 'Kategoriya nomini kiriting!');
-      setError(errText);
+    if (!hasAnyName) {
+      setError('Iltimos, kategoriya nomini kiriting!');
       return;
     }
 
-    // Build payload accurately for the active language so backend can auto-translate missing languages
     const payload = {
-      name_uz: activeLangTab === 'uz' ? currentVal : (formData.name_uz || ''),
-      name_ru: activeLangTab === 'ru' ? currentVal : (formData.name_ru || ''),
-      name_en: activeLangTab === 'en' ? currentVal : (formData.name_en || ''),
+      name_uz: formData.name_uz ? formData.name_uz.trim() : '',
+      name_ru: formData.name_ru ? formData.name_ru.trim() : '',
+      name_en: formData.name_en ? formData.name_en.trim() : '',
       sort_order: formData.sort_order || 1,
       is_active: formData.is_active,
     };
@@ -140,20 +131,71 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
 
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Category Name Input */}
-          <div>
-            <label className="block text-xs font-semibold text-mehmon-gold mb-1.5">
-              {fieldInfo.label} *
-            </label>
+          {/* Multilingual Category Name Input */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-mehmon-gold flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                <span>Kategoriya nomi *</span>
+              </label>
+
+              {/* Language Switcher Tabs */}
+              <div className="flex items-center gap-1 bg-mehmon-input p-1 rounded-lg border border-mehmon-border">
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('uz')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                    activeLangTab === 'uz'
+                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
+                      : 'text-mehmon-muted hover:text-mehmon-text'
+                  }`}
+                >
+                  UZ {formData.name_uz ? '✓' : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('ru')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                    activeLangTab === 'ru'
+                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
+                      : 'text-mehmon-muted hover:text-mehmon-text'
+                  }`}
+                >
+                  RU {formData.name_ru ? '✓' : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('en')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                    activeLangTab === 'en'
+                      ? 'bg-mehmon-gold text-[#1F1915] shadow-sm'
+                      : 'text-mehmon-muted hover:text-mehmon-text'
+                  }`}
+                >
+                  EN {formData.name_en ? '✓' : ''}
+                </button>
+              </div>
+            </div>
+
             <input
               type="text"
               required
-              value={formData[fieldInfo.valueKey]}
-              onChange={(e) => setFormData({ ...formData, [fieldInfo.valueKey]: e.target.value })}
-              placeholder={fieldInfo.placeholder}
+              value={currentNameValue}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder={
+                activeLangTab === 'ru'
+                  ? "Например: Главные Блюда"
+                  : activeLangTab === 'en'
+                  ? "Example: Main Courses"
+                  : "Masalan: Asosiy Taomlar"
+              }
               className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none placeholder-mehmon-muted/50 shadow-inner"
               autoFocus
             />
+
+            <p className="text-[11px] text-mehmon-muted">
+              💡 Bitta tilda kiritsangiz, qolgan tillarga avtomatik tarjima qilinadi.
+            </p>
           </div>
 
           {/* Active Status Toggle */}
