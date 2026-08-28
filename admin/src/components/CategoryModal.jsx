@@ -54,12 +54,15 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
     setLoading(true);
     setError(null);
     try {
+      let saved;
       if (categoryToEdit) {
-        await updateCategory(categoryToEdit.id, payload);
+        saved = await updateCategory(categoryToEdit.id, payload);
       } else {
-        await createCategory(payload);
+        saved = await createCategory(payload);
       }
-      onSaved();
+      if (onSaved) {
+        onSaved(saved, Boolean(categoryToEdit));
+      }
       onClose();
     } catch (err) {
       console.error(err);

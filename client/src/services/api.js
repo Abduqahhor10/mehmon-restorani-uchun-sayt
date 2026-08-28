@@ -23,6 +23,22 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
+// Cache-busting interceptor: prevents browser 304/memory cache on GET queries
+apiClient.interceptors.request.use((config) => {
+  if (config.method?.toLowerCase() === 'get') {
+    config.params = {
+      _t: Date.now(),
+      ...config.params,
+    };
+    config.headers = {
+      ...config.headers,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+    };
+  }
+  return config;
+});
+
 export const getCategories = async () => {
   try {
     const response = await apiClient.get('/categories/?is_active=true');
@@ -42,4 +58,3 @@ export const getProducts = async (params = {}) => {
     return [];
   }
 };
-

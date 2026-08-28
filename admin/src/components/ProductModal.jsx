@@ -114,12 +114,15 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     }
 
     try {
+      let saved;
       if (productToEdit) {
-        await updateProduct(productToEdit.id, payload);
+        saved = await updateProduct(productToEdit.id, payload);
       } else {
-        await createProduct(payload);
+        saved = await createProduct(payload);
       }
-      onSaved();
+      if (onSaved) {
+        onSaved(saved, Boolean(productToEdit));
+      }
       onClose();
     } catch (err) {
       console.error(err);

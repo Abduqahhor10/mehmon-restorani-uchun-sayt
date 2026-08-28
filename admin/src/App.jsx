@@ -25,8 +25,8 @@ function AdminContent() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const [cats, prods] = await Promise.all([
         getCategories(),
@@ -37,13 +37,78 @@ function AdminContent() {
     } catch (err) {
       console.warn('API error (Admin):', err.message);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    // Initial fetch with full loader
+    fetchData(true);
+
+    // Auto-sync every 3.5 seconds in background when tab is active
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData(false);
+      }
+    }, 3500);
+
+    // Refresh immediately when window / browser tab gains focus
+    const handleFocus = () => fetchData(false);
+    window.addEventListener('focus', handleFocus);
+
+    // Cross-tab broadcast listener
+    let bc;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('mehmon_sync_channel');
+        bc.onmessage = () => fetchData(false);
+      }
+    } catch (e) {}
+
+    const handleStorage = (e) => {
+      if (e.key === 'mehmon_menu_update') {
+        fetchData(false);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) bc.close();
+    };
   }, []);
+
+  // Instant optimistic state update when Category is saved
+  const handleCategorySaved = (savedCategory, isEdit) => {
+    if (savedCategory) {
+      setCategories((prev) => {
+        if (isEdit) {
+          return prev.map((c) => (c.id === savedCategory.id ? { ...c, ...savedCategory } : c));
+        } else {
+          return [...prev.filter((c) => c.id !== savedCategory.id), savedCategory];
+        }
+      });
+    }
+    // Silent background sync to ensure full backend alignment
+    fetchData(false);
+  };
+
+  // Instant optimistic state update when Product is saved
+  const handleProductSaved = (savedProduct, isEdit) => {
+    if (savedProduct) {
+      setProducts((prev) => {
+        if (isEdit) {
+          return prev.map((p) => (p.id === savedProduct.id ? { ...p, ...savedProduct } : p));
+        } else {
+          return [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)];
+        }
+      });
+    }
+    // Silent background sync to ensure full backend alignment
+    fetchData(false);
+  };
 
   // Guard Clause on "Add Product"
   const handleAddProductClick = () => {
@@ -109,14 +174,14 @@ function AdminContent() {
               categories={categories}
               onAddProductClick={handleAddProductClick}
               onEditProduct={handleOpenEditProduct}
-              onRefresh={fetchData}
+              onRefresh={() => fetchData(false)}
             />
           ) : (
             <CategoriesTab
               categories={categories}
               onAddCategory={handleOpenAddCategory}
               onEditCategory={handleOpenEditCategory}
-              onRefresh={fetchData}
+              onRefresh={() => fetchData(false)}
             />
           )}
 
@@ -135,7 +200,7 @@ function AdminContent() {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         categoryToEdit={categoryToEdit}
-        onSaved={fetchData}
+        onSaved={handleCategorySaved}
       />
 
       {/* Product Creation / Edit Modal */}
@@ -144,7 +209,7 @@ function AdminContent() {
         onClose={() => setIsProductModalOpen(false)}
         productToEdit={productToEdit}
         categories={categories}
-        onSaved={fetchData}
+        onSaved={handleProductSaved}
       />
 
     </div>

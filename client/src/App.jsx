@@ -18,14 +18,15 @@ function MenuContent() {
   const [loading, setLoading] = useState(true);
 
   // Live Sync with Backend / Admin Panel
-  const fetchLiveData = async () => {
+  const fetchLiveData = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const [catsRes, prodsRes] = await Promise.all([
         getCategories(),
         getProducts(),
       ]);
       
-      // Directly set the database state
+      // Directly update the state smoothly
       if (Array.isArray(catsRes)) {
         setCategories(catsRes);
       }
@@ -35,24 +36,46 @@ function MenuContent() {
     } catch (err) {
       console.warn('Sync error with backend:', err.message);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Initial fetch
-    fetchLiveData();
+    // Initial fetch with loader
+    fetchLiveData(true);
 
-    // Auto-refresh polling every 10 seconds for live sync with Admin Panel
-    const interval = setInterval(fetchLiveData, 10000);
+    // Fast auto-refresh polling every 3 seconds for live sync with Admin Panel
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveData(false);
+      }
+    }, 3000);
 
     // Refresh immediately when window / browser tab gains focus
-    const handleFocus = () => fetchLiveData();
+    const handleFocus = () => fetchLiveData(false);
     window.addEventListener('focus', handleFocus);
+
+    // Cross-tab broadcast listener (instant live sync when admin adds/modifies data)
+    let bc;
+    try {
+      if ('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('mehmon_sync_channel');
+        bc.onmessage = () => fetchLiveData(false);
+      }
+    } catch (e) {}
+
+    const handleStorage = (e) => {
+      if (e.key === 'mehmon_menu_update') {
+        fetchLiveData(false);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorage);
+      if (bc) bc.close();
     };
   }, []);
 

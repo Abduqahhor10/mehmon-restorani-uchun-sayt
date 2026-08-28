@@ -3,6 +3,8 @@ import urllib.parse
 import json
 import re
 import logging
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +54,11 @@ def format_title_case(text: str) -> str:
     lower = cleaned.lower()
     return re.sub(r'(^|[\s\-/([{\"\«\“])([^\s\-/([{\"\«\“])', lambda m: m.group(1) + m.group(2).upper(), lower)
 
+@lru_cache(maxsize=1024)
 def translate_text(text, target_lang='uz', source_lang='auto'):
     """
     Translates text with dictionary lookup and multiple Google endpoints fallback.
+    Cached for fast repeated responses.
     """
     if not text or not str(text).strip():
         return ''
@@ -69,7 +73,7 @@ def translate_text(text, target_lang='uz', source_lang='auto'):
     try:
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q=" + urllib.parse.quote(cleaned)
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=2.5) as response:
             data = json.loads(response.read().decode('utf-8'))
             parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
             res = ''.join(parts).strip()
@@ -82,7 +86,7 @@ def translate_text(text, target_lang='uz', source_lang='auto'):
     try:
         url2 = f"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={source_lang}&tl={target_lang}&q=" + urllib.parse.quote(cleaned)
         req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-        with urllib.request.urlopen(req2, timeout=5) as response2:
+        with urllib.request.urlopen(req2, timeout=2.5) as response2:
             data2 = json.loads(response2.read().decode('utf-8'))
             if isinstance(data2, list) and len(data2) > 0:
                 res2 = data2[0]
@@ -97,7 +101,7 @@ def translate_text(text, target_lang='uz', source_lang='auto'):
 def auto_detect_and_translate(text, is_title=True):
     """
     Given a single input text in Uzbek, Russian, or English,
-    automatically detects the script and returns formatted (uz, ru, en).
+    automatically detects the script and returns formatted (uz, ru, en) in parallel.
     """
     if not text or not str(text).strip():
         return '', '', ''
@@ -106,16 +110,22 @@ def auto_detect_and_translate(text, is_title=True):
     # Check if text contains Cyrillic characters (Russian)
     if re.search(r'[а-яА-ЯёЁ]', cleaned):
         ru = cleaned
-        uz = translate_text(ru, 'uz', 'ru')
-        en = translate_text(ru, 'en', 'ru')
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            fut_uz = executor.submit(translate_text, ru, 'uz', 'ru')
+            fut_en = executor.submit(translate_text, ru, 'en', 'ru')
+            uz = fut_uz.result()
+            en = fut_en.result()
         if is_title:
             return format_title_case(uz or ru), format_title_case(ru), format_title_case(en or ru)
         return (uz or ru), ru, (en or ru)
     else:
         # Latin characters (Uzbek / English)
         uz = cleaned
-        ru = translate_text(uz, 'ru', 'uz')
-        en = translate_text(uz, 'en', 'uz')
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            fut_ru = executor.submit(translate_text, uz, 'ru', 'uz')
+            fut_en = executor.submit(translate_text, uz, 'en', 'uz')
+            ru = fut_ru.result()
+            en = fut_en.result()
         if is_title:
             return format_title_case(uz), format_title_case(ru or uz), format_title_case(en or uz)
         return uz, (ru or uz), (en or uz)
