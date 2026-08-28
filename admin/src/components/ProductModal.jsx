@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Upload, Check, Loader2, Image as ImageIcon, Flame } from 'lucide-react';
 import { createProduct, updateProduct } from '../services/api';
+import { formatTitleCase } from '../utils/textUtils';
 
 export default function ProductModal({ isOpen, onClose, productToEdit, categories, onSaved }) {
   const { t } = useTranslation();
@@ -74,8 +75,8 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
+    const formattedName = formatTitleCase(formData.name);
+    if (!formattedName) {
       setError('Iltimos, taom nomini kiriting!');
       return;
     }
@@ -93,7 +94,7 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
 
     const payload = new FormData();
     payload.append('category', formData.category);
-    payload.append('name_uz', trimmedName);
+    payload.append('name_uz', formattedName);
     payload.append('name_ru', '');
     payload.append('name_en', '');
     payload.append('price', formData.price);
@@ -208,6 +209,7 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onBlur={() => setFormData((prev) => ({ ...prev, name: formatTitleCase(prev.name) }))}
               placeholder="Masalan: To'y Oshi yoki Праздничный Плов"
               className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner"
             />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, FolderPlus, Check, Loader2 } from 'lucide-react';
 import { createCategory, updateCategory } from '../services/api';
+import { formatTitleCase } from '../utils/textUtils';
 
 export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved }) {
   const { t } = useTranslation();
@@ -36,14 +37,14 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
+    const formattedName = formatTitleCase(formData.name);
+    if (!formattedName) {
       setError('Iltimos, kategoriya nomini kiriting!');
       return;
     }
 
     const payload = {
-      name_uz: trimmedName,
+      name_uz: formattedName,
       name_ru: '',
       name_en: '',
       sort_order: formData.sort_order || 1,
@@ -111,6 +112,7 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onBlur={() => setFormData((prev) => ({ ...prev, name: formatTitleCase(prev.name) }))}
               placeholder="Masalan: Asosiy Taomlar yoki Горячие блюда"
               className="w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none placeholder-mehmon-muted/50 shadow-inner"
               autoFocus

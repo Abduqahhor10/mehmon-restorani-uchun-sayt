@@ -1,5 +1,5 @@
 from django.db import models
-from .translator import auto_translate_category, auto_translate_product
+from .translator import auto_translate_category, auto_translate_product, format_title_case
 
 class Category(models.Model):
     name_uz = models.CharField(max_length=150, blank=True, default='', verbose_name="Kategoriya nomi (UZ)")
@@ -16,7 +16,19 @@ class Category(models.Model):
         ordering = ['sort_order', 'id']
 
     def save(self, *args, **kwargs):
+        if self.name_uz:
+            self.name_uz = format_title_case(self.name_uz)
+        if self.name_ru:
+            self.name_ru = format_title_case(self.name_ru)
+        if self.name_en:
+            self.name_en = format_title_case(self.name_en)
         auto_translate_category(self)
+        if self.name_uz:
+            self.name_uz = format_title_case(self.name_uz)
+        if self.name_ru:
+            self.name_ru = format_title_case(self.name_ru)
+        if self.name_en:
+            self.name_en = format_title_case(self.name_en)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -70,7 +82,19 @@ class Product(models.Model):
         ordering = ['-is_recommended', '-created_at']
 
     def save(self, *args, **kwargs):
+        if self.name_uz:
+            self.name_uz = format_title_case(self.name_uz)
+        if self.name_ru:
+            self.name_ru = format_title_case(self.name_ru)
+        if self.name_en:
+            self.name_en = format_title_case(self.name_en)
         auto_translate_product(self)
+        if self.name_uz:
+            self.name_uz = format_title_case(self.name_uz)
+        if self.name_ru:
+            self.name_ru = format_title_case(self.name_ru)
+        if self.name_en:
+            self.name_en = format_title_case(self.name_en)
         super().save(*args, **kwargs)
 
     def __str__(self):

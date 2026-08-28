@@ -8,20 +8,49 @@ logger = logging.getLogger(__name__)
 
 # Common food dictionary for fast, accurate translations
 FOOD_DICT = {
-    'чечевичный суп': {'uz': "Yasmiq sho'rva", 'ru': "Чечевичный суп", 'en': "Lentil Soup"},
+    'чечевичный суп': {'uz': "Yasmiq Sho'rva", 'ru': "Чечевичный Суп", 'en': "Lentil Soup"},
     'суп': {'uz': "Sho'rva", 'ru': "Суп", 'en': "Soup"},
     'плов': {'uz': "Osh", 'ru': "Плов", 'en': "Pilaf"},
+    'osh': {'uz': "Osh", 'ru': "Плов", 'en': "Pilaf"},
     'лагман': {'uz': "Lag'mon", 'ru': "Лагман", 'en': "Lagman"},
+    "lag'mon": {'uz': "Lag'mon", 'ru': "Лагман", 'en': "Lagman"},
     'манты': {'uz': "Manti", 'ru': "Манты", 'en': "Mantu"},
+    'manti': {'uz': "Manti", 'ru': "Манты", 'en': "Mantu"},
     'самса': {'uz': "Somsa", 'ru': "Самса", 'en': "Samosa"},
     'сомса': {'uz': "Somsa", 'ru': "Самса", 'en': "Samosa"},
+    'somsa': {'uz': "Somsa", 'ru': "Самса", 'en': "Samosa"},
     'шашлык': {'uz': "Shashlik", 'ru': "Шашлык", 'en': "Kebab"},
-    'люля кебаб': {'uz': "Lula kabob", 'ru': "Люля кебаб", 'en': "Lula Kebab"},
+    'shashlik': {'uz': "Shashlik", 'ru': "Шашлык", 'en': "Kebab"},
+    'kabob': {'uz': "Kabob", 'ru': "Шашлык", 'en': "Kebab"},
+    'люля кебаб': {'uz': "Lula Kabob", 'ru': "Люля Кебаб", 'en': "Lula Kebab"},
+    'lula kabob': {'uz': "Lula Kabob", 'ru': "Люля Кебаб", 'en': "Lula Kebab"},
     'салат': {'uz': "Salat", 'ru': "Салат", 'en': "Salad"},
+    'salat': {'uz': "Salat", 'ru': "Салат", 'en': "Salad"},
     'чай': {'uz': "Choy", 'ru': "Чай", 'en': "Tea"},
+    'choy': {'uz': "Choy", 'ru': "Чай", 'en': "Tea"},
     'хлеб': {'uz': "Non", 'ru': "Хлеб", 'en': "Bread"},
+    'non': {'uz': "Non", 'ru': "Хлеб", 'en': "Bread"},
     'лепешка': {'uz': "Non", 'ru': "Лепешка", 'en': "Traditional Bread"},
 }
+
+def format_title_case(text: str) -> str:
+    """
+    Capitalizes the first letter of each word and converts the rest to lowercase.
+    Preserves Uzbek special apostrophes (o', g', etc.), Russian, English, hyphens, and quotes.
+    Examples:
+        'osh' -> 'Osh'
+        'TO\'Y OSHI' -> 'To\'y Oshi'
+        'iSsiq TaOmLaR' -> 'Issiq Taomlar'
+        'горячие блюда' -> 'Горячие Блюда'
+        'qozon-kabob' -> 'Qozon-Kabob'
+    """
+    if not text:
+        return ''
+    cleaned = re.sub(r'\s+', ' ', str(text).strip())
+    if not cleaned:
+        return ''
+    lower = cleaned.lower()
+    return re.sub(r'(^|[\s\-/([{\"\«\“])([^\s\-/([{\"\«\“])', lambda m: m.group(1) + m.group(2).upper(), lower)
 
 def translate_text(text, target_lang='uz', source_lang='auto'):
     """
@@ -65,35 +94,40 @@ def translate_text(text, target_lang='uz', source_lang='auto'):
 
     return cleaned
 
-def auto_detect_and_translate(text):
+def auto_detect_and_translate(text, is_title=True):
     """
     Given a single input text in Uzbek, Russian, or English,
-    automatically detects the script and returns (uz, ru, en).
+    automatically detects the script and returns formatted (uz, ru, en).
     """
     if not text or not str(text).strip():
         return '', '', ''
-    cleaned = str(text).strip()
+    cleaned = format_title_case(text) if is_title else str(text).strip()
     
     # Check if text contains Cyrillic characters (Russian)
     if re.search(r'[а-яА-ЯёЁ]', cleaned):
         ru = cleaned
         uz = translate_text(ru, 'uz', 'ru')
         en = translate_text(ru, 'en', 'ru')
+        if is_title:
+            return format_title_case(uz or ru), format_title_case(ru), format_title_case(en or ru)
         return (uz or ru), ru, (en or ru)
     else:
         # Latin characters (Uzbek / English)
         uz = cleaned
         ru = translate_text(uz, 'ru', 'uz')
         en = translate_text(uz, 'en', 'uz')
+        if is_title:
+            return format_title_case(uz), format_title_case(ru or uz), format_title_case(en or uz)
         return uz, (ru or uz), (en or uz)
 
 def auto_translate_category(category):
     """
-    Auto-translates category names based on input and corrects Cyrillic/Latin mix-ups.
+    Auto-translates category names based on input, formats to title case,
+    and corrects Cyrillic/Latin mix-ups.
     """
-    uz = (category.name_uz or '').strip()
-    ru = (category.name_ru or '').strip()
-    en = (category.name_en or '').strip()
+    uz = format_title_case(category.name_uz or '')
+    ru = format_title_case(category.name_ru or '')
+    en = format_title_case(category.name_en or '')
 
     # If name_uz is actually Russian (has Cyrillic)
     if uz and re.search(r'[а-яА-ЯёЁ]', uz) and not ru:
@@ -106,18 +140,23 @@ def auto_translate_category(category):
 
     # If only one language is filled or if uz/ru/en need synchronization
     if not uz or not ru or not en or (uz == ru and re.search(r'[а-яА-ЯёЁ]', uz)):
-        t_uz, t_ru, t_en = auto_detect_and_translate(primary_text)
-        category.name_uz = t_uz
-        category.name_ru = t_ru
-        category.name_en = t_en
+        t_uz, t_ru, t_en = auto_detect_and_translate(primary_text, is_title=True)
+        category.name_uz = format_title_case(t_uz)
+        category.name_ru = format_title_case(t_ru)
+        category.name_en = format_title_case(t_en)
+    else:
+        category.name_uz = format_title_case(uz)
+        category.name_ru = format_title_case(ru)
+        category.name_en = format_title_case(en)
 
 def auto_translate_product(product):
     """
-    Auto-translates product names and descriptions and corrects Cyrillic/Latin mix-ups.
+    Auto-translates product names and descriptions, formats names to title case,
+    and corrects Cyrillic/Latin mix-ups.
     """
-    name_uz = (product.name_uz or '').strip()
-    name_ru = (product.name_ru or '').strip()
-    name_en = (product.name_en or '').strip()
+    name_uz = format_title_case(product.name_uz or '')
+    name_ru = format_title_case(product.name_ru or '')
+    name_en = format_title_case(product.name_en or '')
 
     # If name_uz contains Cyrillic and name_ru is empty
     if name_uz and re.search(r'[а-яА-ЯёЁ]', name_uz) and not name_ru:
@@ -127,10 +166,14 @@ def auto_translate_product(product):
     primary_name = name_uz or name_ru or name_en
     if primary_name:
         if not name_uz or not name_ru or not name_en or (name_uz == name_ru and re.search(r'[а-яА-ЯёЁ]', name_uz)):
-            t_uz, t_ru, t_en = auto_detect_and_translate(primary_name)
-            product.name_uz = t_uz
-            product.name_ru = t_ru
-            product.name_en = t_en
+            t_uz, t_ru, t_en = auto_detect_and_translate(primary_name, is_title=True)
+            product.name_uz = format_title_case(t_uz)
+            product.name_ru = format_title_case(t_ru)
+            product.name_en = format_title_case(t_en)
+        else:
+            product.name_uz = format_title_case(name_uz)
+            product.name_ru = format_title_case(name_ru)
+            product.name_en = format_title_case(name_en)
 
     # Descriptions auto-translation
     desc_uz = (product.description_uz or '').strip()
