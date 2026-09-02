@@ -64,7 +64,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database Configuration (Neon.tech PostgreSQL persistent cloud database)
+# Database Configuration (Neon.tech PostgreSQL persistent cloud database / Docker / SQLite)
 DEFAULT_NEON_DB = 'postgresql://neondb_owner:npg_EfkOKiANYm31@ep-lively-truth-b2444tdn-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_NEON_DB)
 
@@ -75,6 +75,17 @@ if DATABASE_URL and ('postgres' in DATABASE_URL or 'postgresql' in DATABASE_URL)
             conn_max_age=600,
             ssl_require=True
         )
+    }
+elif os.environ.get('DB_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'mehmon_db'),
+            'USER': os.environ.get('DB_USER', 'mehmon_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'mehmon_secure_password_2026'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
 else:
     DATABASES = {
@@ -111,7 +122,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'core.authentication.CsrfExemptSessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_FILTER_BACKENDS': [

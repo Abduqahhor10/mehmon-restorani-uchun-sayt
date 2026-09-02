@@ -80,8 +80,9 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
       setError('Iltimos, taom nomini kiriting!');
       return;
     }
-    if (!formData.category) {
-      setError('Iltimos, kategoriyani tanlang!');
+    const catId = formData.category || (categories && categories[0]?.id);
+    if (!catId) {
+      setError('Iltimos, kategoriyani tanlang! Agar kategoriya yo\'q bo\'lsa, oldin kategoriya yarating.');
       return;
     }
     if (!formData.price) {
@@ -93,16 +94,16 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     setError(null);
 
     const payload = new FormData();
-    payload.append('category', formData.category);
+    payload.append('category', catId);
     payload.append('name_uz', formattedName);
     payload.append('name_ru', '');
     payload.append('name_en', '');
     payload.append('price', formData.price);
-    payload.append('portion_weight', 0);
-    payload.append('calories', 0);
-    payload.append('protein', 0);
-    payload.append('fat', 0);
-    payload.append('carbs', 0);
+    payload.append('portion_weight', formData.portion_weight || 0);
+    payload.append('calories', formData.calories || 0);
+    payload.append('protein', formData.protein || 0);
+    payload.append('fat', formData.fat || 0);
+    payload.append('carbs', formData.carbs || 0);
     payload.append('is_recommended', formData.is_recommended);
     payload.append('is_active', formData.is_active);
 
@@ -126,7 +127,21 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
       onClose();
     } catch (err) {
       console.error(err);
-      setError('Xatolik yuz berdi: ' + (err.response?.data?.detail || JSON.stringify(err.response?.data) || err.message));
+      let errMsg = 'Noma\'lum xatolik';
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errMsg = err.response.data;
+        } else if (err.response.data.detail) {
+          errMsg = err.response.data.detail;
+        } else {
+          errMsg = Object.entries(err.response.data)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+        }
+      } else if (err.message) {
+        errMsg = err.message;
+      }
+      setError('Xatolik yuz berdi: ' + errMsg);
     } finally {
       setLoading(false);
     }

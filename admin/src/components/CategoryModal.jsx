@@ -66,9 +66,20 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
       onClose();
     } catch (err) {
       console.error(err);
-      const errMsg = err.response?.data
-        ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data))
-        : err.message;
+      let errMsg = 'Noma\'lum xatolik';
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errMsg = err.response.data;
+        } else if (err.response.data.detail) {
+          errMsg = err.response.data.detail;
+        } else {
+          errMsg = Object.entries(err.response.data)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+        }
+      } else if (err.message) {
+        errMsg = err.message;
+      }
       setError('Xatolik: ' + errMsg);
     } finally {
       setLoading(false);

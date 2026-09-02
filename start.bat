@@ -5,7 +5,7 @@ echo ===================================================
 echo.
 
 echo [1/3] Initializing Django Backend (Port 8000)...
-start "Mehmon Backend API (8000)" cmd /k "cd backend && python manage.py migrate && python manage.py seed_data && python manage.py runserver 0.0.0.0:8000"
+start "Mehmon Backend API (8000)" cmd /k "cd backend && (if exist venv\Scripts\activate call venv\Scripts\activate) && python manage.py migrate && python manage.py seed_data && python manage.py runserver 0.0.0.0:8000"
 
 timeout /t 3 /nobreak >nul
 

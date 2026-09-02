@@ -22,7 +22,10 @@ class Category(models.Model):
             self.name_ru = format_title_case(self.name_ru)
         if self.name_en:
             self.name_en = format_title_case(self.name_en)
-        auto_translate_category(self)
+        try:
+            auto_translate_category(self)
+        except Exception:
+            pass
         if self.name_uz:
             self.name_uz = format_title_case(self.name_uz)
         if self.name_ru:
@@ -88,7 +91,10 @@ class Product(models.Model):
             self.name_ru = format_title_case(self.name_ru)
         if self.name_en:
             self.name_en = format_title_case(self.name_en)
-        auto_translate_product(self)
+        try:
+            auto_translate_product(self)
+        except Exception:
+            pass
         if self.name_uz:
             self.name_uz = format_title_case(self.name_uz)
         if self.name_ru:

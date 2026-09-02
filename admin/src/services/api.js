@@ -9,10 +9,11 @@ const getApiBaseUrl = () => {
     if (host === 'localhost' || host === '127.0.0.1') {
       return 'http://localhost:8000/api';
     }
+    // If opened on local network IP (e.g. 192.168.x.x) or local dev host
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.endsWith('.local')) {
+      return `http://${host}:8000/api`;
+    }
   }
-  console.error(
-    "⚠️ [Mehmon API Warning]: VITE_API_URL sozlanmagan! Serverga deploy qilinganda Vercel/Netlify Environment Variables'ga VITE_API_URL=<backend-url>/api qo'shing."
-  );
   return '/api';
 };
 
