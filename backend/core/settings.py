@@ -65,14 +65,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database Configuration (Neon.tech PostgreSQL persistent cloud database / Docker / SQLite)
+# Production / Render MUST use PostgreSQL to guarantee persistent data across container restarts.
 DEFAULT_NEON_DB = 'postgresql://neondb_owner:npg_EfkOKiANYm31@ep-lively-truth-b2444tdn-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
-DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_NEON_DB)
+
+raw_db_url = (os.environ.get('DATABASE_URL') or '').strip()
+DATABASE_URL = raw_db_url if raw_db_url else DEFAULT_NEON_DB
+
+IS_RENDER = os.environ.get('RENDER') == 'true' or bool(os.environ.get('RENDER_SERVICE_ID'))
+IS_PRODUCTION = (not DEBUG) or IS_RENDER
 
 if DATABASE_URL and ('postgres' in DATABASE_URL or 'postgresql' in DATABASE_URL):
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=600,
+            conn_max_age=0,  # conn_max_age=0 prevents dead pooled connections with Neon serverless compute
             ssl_require=True
         )
     }
@@ -88,6 +94,12 @@ elif os.environ.get('DB_HOST'):
         }
     }
 else:
+    if IS_PRODUCTION:
+        # Strict safeguard: Never allow fallback to ephemeral SQLite on Render or Production!
+        raise RuntimeError(
+            "CRITICAL: PostgreSQL DATABASE_URL is required on Render/Production! "
+            "SQLite is strictly forbidden to prevent ephemeral data loss on container restarts."
+        )
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

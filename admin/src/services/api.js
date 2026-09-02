@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const PROD_BACKEND_API = 'https://mehmon-restorani-uchun-sayt.onrender.com/api';
+
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
@@ -14,7 +16,7 @@ const getApiBaseUrl = () => {
       return `http://${host}:8000/api`;
     }
   }
-  return '/api';
+  return PROD_BACKEND_API;
 };
 
 const API_BASE_URL = getApiBaseUrl();
