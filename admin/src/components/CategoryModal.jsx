@@ -196,22 +196,6 @@ export default function CategoryModal({ isOpen, onClose, categoryToEdit, onSaved
             )}
           </div>
 
-          {/* Sort order: the menu lists categories in this order, not alphabetically. */}
-          <div>
-            <label className={labelClass} htmlFor="category-sort-order">
-              {t('admin.sort_order')}
-            </label>
-            <input
-              id="category-sort-order"
-              type="number"
-              min="0"
-              step="1"
-              value={formData.sort_order}
-              onChange={setField('sort_order')}
-              className={inputClass}
-            />
-            <p className="text-[11px] text-mehmon-muted mt-1">{t('admin.sort_order_hint')}</p>
-          </div>
 
           {/* Active status */}
           <div className="pt-1">

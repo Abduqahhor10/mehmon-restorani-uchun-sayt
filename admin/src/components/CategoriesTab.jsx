@@ -309,11 +309,7 @@ export default function CategoriesTab({ categories, onAddCategory, onEditCategor
 
                 {/* Actions (Hidden in Selection Mode) */}
                 {!isSelectionMode ? (
-                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-mehmon-border">
-                    <span className="text-[11px] text-mehmon-muted font-medium">
-                      #{category.sort_order ?? 0} · {t('admin.products_count', { count: category.products_count ?? 0 })}
-                    </span>
-                    
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-mehmon-border">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); onEditCategory(category); }}
