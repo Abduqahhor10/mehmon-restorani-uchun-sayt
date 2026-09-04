@@ -70,11 +70,10 @@ function MenuContent() {
     };
   }, [fetchLiveData]);
 
-  // Only show categories that still have at least one visible dish.
+  // Show active categories on the menu
   const visibleCategories = useMemo(() => {
-    const withProducts = new Set(products.map((p) => p.category));
-    return categories.filter((c) => withProducts.has(c.id));
-  }, [categories, products]);
+    return categories.filter((c) => c.is_active !== false);
+  }, [categories]);
 
   // A category that was filtered away must not leave the menu stuck on an empty view.
   useEffect(() => {
