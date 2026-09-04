@@ -2,10 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Check,
-  ChevronDown,
   Flame,
   Image as ImageIcon,
-  Languages,
   Loader2,
   Upload,
   X,
@@ -42,7 +40,6 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
-  const [showTranslations, setShowTranslations] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -108,7 +105,6 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
 
     setImageFile(null);
     setRemoveImage(false);
-    setShowTranslations(false);
     setError(null);
   }, [productToEdit, isOpen]);
 
@@ -244,13 +240,6 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
     'w-full bg-mehmon-input text-mehmon-text text-sm px-3.5 py-2.5 rounded-xl border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner';
   const labelClass = 'block text-xs font-semibold text-mehmon-gold mb-1.5';
 
-  const nutritionFields = [
-    { key: 'portion_weight', label: t('admin.portion_weight'), step: '10', unit: 'g' },
-    { key: 'calories', label: t('admin.calories'), step: '10', unit: 'kcal' },
-    { key: 'protein', label: t('admin.protein'), step: '0.1', unit: 'g' },
-    { key: 'fat', label: t('admin.fat'), step: '0.1', unit: 'g' },
-    { key: 'carbs', label: t('admin.carbs'), step: '0.1', unit: 'g' },
-  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
@@ -327,138 +316,24 @@ export default function ProductModal({ isOpen, onClose, productToEdit, categorie
             </div>
           </div>
 
-          {/* Name & description (auto-translated) */}
-          <div className="bg-mehmon-subtle p-4 rounded-xl border border-mehmon-border space-y-3">
-            <div>
-              <label className={labelClass} htmlFor="product-name">
-                {t('admin.product_name')} *
-              </label>
-              <input
-                id="product-name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={setField('name')}
-                onBlur={() => setFormData((prev) => ({ ...prev, name: formatTitleCase(prev.name) }))}
-                placeholder="Masalan: To'y Oshi yoki Праздничный Плов"
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass} htmlFor="product-description">
-                {t('admin.description')}
-              </label>
-              <textarea
-                id="product-description"
-                rows={3}
-                value={formData.description}
-                onChange={setField('description')}
-                placeholder={t('admin.description_placeholder')}
-                className={`${inputClass} resize-y`}
-              />
-            </div>
-
+          {/* Simple Single Name Input */}
+          <div className="bg-mehmon-subtle p-4 rounded-xl border border-mehmon-border space-y-2">
+            <label className={labelClass} htmlFor="product-name">
+              {t('admin.product_name')} *
+            </label>
+            <input
+              id="product-name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={setField('name')}
+              onBlur={() => setFormData((prev) => ({ ...prev, name: formatTitleCase(prev.name) }))}
+              placeholder="Masalan: To'y Oshi yoki Праздничный Плов"
+              className={inputClass}
+            />
             <p className="text-[11px] text-mehmon-muted">
               ✨ {t('admin.auto_translate_hint')}
             </p>
-
-            {/* Manual translation override */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => setShowTranslations((prev) => !prev)}
-                aria-expanded={showTranslations}
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-mehmon-gold hover:opacity-80 transition-opacity"
-              >
-                <Languages className="w-3.5 h-3.5" />
-                <span>{t('admin.manual_translation')}</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform ${showTranslations ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {showTranslations && (
-                <div className="mt-3 space-y-3 border-t border-mehmon-border pt-3">
-                  <p className="text-[11px] text-mehmon-muted">
-                    {t('admin.manual_translation_hint')}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelClass} htmlFor="product-name-ru">RU</label>
-                      <input
-                        id="product-name-ru"
-                        type="text"
-                        value={formData.name_ru}
-                        onChange={setField('name_ru')}
-                        className={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass} htmlFor="product-name-en">EN</label>
-                      <input
-                        id="product-name-en"
-                        type="text"
-                        value={formData.name_en}
-                        onChange={setField('name_en')}
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelClass} htmlFor="product-desc-ru">
-                        {t('admin.description')} RU
-                      </label>
-                      <textarea
-                        id="product-desc-ru"
-                        rows={2}
-                        value={formData.description_ru}
-                        onChange={setField('description_ru')}
-                        className={`${inputClass} resize-y`}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass} htmlFor="product-desc-en">
-                        {t('admin.description')} EN
-                      </label>
-                      <textarea
-                        id="product-desc-en"
-                        rows={2}
-                        value={formData.description_en}
-                        onChange={setField('description_en')}
-                        className={`${inputClass} resize-y`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Nutrition */}
-          <div className="p-4 bg-mehmon-subtle rounded-xl border border-mehmon-border space-y-3">
-            <p className="text-xs font-bold text-mehmon-gold uppercase tracking-wider">
-              🥗 {t('admin.nutritional_value')}
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {nutritionFields.map(({ key, label, step, unit }) => (
-                <div key={key}>
-                  <label className="block text-[11px] text-mehmon-muted mb-1" htmlFor={`product-${key}`}>
-                    {label} ({unit})
-                  </label>
-                  <input
-                    id={`product-${key}`}
-                    type="number"
-                    min="0"
-                    step={step}
-                    value={formData[key]}
-                    onChange={setField(key)}
-                    className="w-full bg-mehmon-input text-mehmon-text text-sm px-3 py-2 rounded-lg border border-mehmon-border focus:border-mehmon-gold focus:outline-none shadow-inner"
-                  />
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Image upload & URL */}
