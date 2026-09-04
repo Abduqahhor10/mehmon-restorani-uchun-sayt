@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PlusCircle, Search, Trash2, CheckSquare, X, CheckCheck } from 'lucide-react';
 import ProductCardAdmin from './ProductCardAdmin';
 import ConfirmModal from './ConfirmModal';
-import { deleteAllProducts, deleteSelectedProducts, deleteProduct } from '../services/api';
+import { deleteAllProducts, deleteSelectedProducts, deleteProduct, describeApiError } from '../services/api';
 
 export default function ProductsTab({
   products,
@@ -15,6 +15,7 @@ export default function ProductsTab({
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState('');
   const [selectedCatId, setSelectedCatId] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   // Selection Mode State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -132,10 +133,11 @@ export default function ProductsTab({
         await deleteProduct(confirmModal.targetId);
       }
       onRefresh();
+      setActionError(null);
       setConfirmModal({ isOpen: false, title: '', description: '', actionType: '', targetId: null, loading: false });
     } catch (err) {
-      alert('Xatolik yuz berdi: ' + err.message);
-      setConfirmModal((prev) => ({ ...prev, loading: false }));
+      setActionError(describeApiError(err));
+      setConfirmModal({ isOpen: false, title: '', description: '', actionType: '', targetId: null, loading: false });
     }
   };
 
@@ -145,6 +147,23 @@ export default function ProductsTab({
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 p-3 bg-red-950/20 border border-red-500/40 rounded-xl text-xs text-red-500"
+        >
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label={t('admin.cancel')}
+            className="shrink-0 hover:opacity-70"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Filter & Actions Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-mehmon-card p-4 rounded-2xl border border-mehmon-border shadow-sm">
         
@@ -259,25 +278,23 @@ export default function ProductsTab({
           </button>
 
           {/* Individual Category Pills */}
-          {[...categories]
-            .sort((a, b) => (getCatName(a) || '').localeCompare(getCatName(b) || '', i18n.language || 'uz', { sensitivity: 'base' }))
-            .map((c) => {
-              const isSelected = selectedCatId === c.id;
-              const count = products.filter((p) => p.category === c.id).length;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCatId(c.id)}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 select-none ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.02]'
-                      : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
-                  }`}
-                >
-                  {getCatName(c)} ({count})
-                </button>
-              );
-            })}
+          {categories.map((c) => {
+            const isSelected = selectedCatId === c.id;
+            const count = products.filter((p) => p.category === c.id).length;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCatId(c.id)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200 select-none ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-[#D4A359] to-[#B8863B] text-[#1F1915] font-bold shadow-[0_4px_15px_rgba(212,163,89,0.35)] scale-[1.02]'
+                    : 'bg-mehmon-card text-mehmon-text/85 hover:text-mehmon-gold hover:bg-mehmon-card-hover border border-mehmon-border'
+                }`}
+              >
+                {getCatName(c)} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -294,6 +311,7 @@ export default function ProductsTab({
               isSelected={selectedIds.includes(product.id)}
               onToggleSelect={handleToggleSelect}
               onDeleteSingle={handleOpenDeleteSingleModal}
+              onError={setActionError}
             />
           ))}
         </div>

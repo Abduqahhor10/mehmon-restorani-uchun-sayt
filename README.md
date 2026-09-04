@@ -1,153 +1,179 @@
-# 🍽️ Mehmon Restaurant - Online Menu & Admin Panel System
+# 🍽️ Mehmon Restaurant — Online Menu & Admin Panel
 
-A complete, responsive, and luxury Online Menu Website and Admin Panel system built for **Mehmon Restaurant**.
-
-Designed with a high-end luxury dark-brown & warm-gold aesthetic, multilingual support (Uzbek, Russian, English), detailed nutritional macros breakdowns (Calories, Protein, Fat, Carbs, Portion weight), and an intuitive admin management portal.
+Mehmon restorani uchun qurilgan to'liq onlayn menyu tizimi: mijozlar uchun ko'p tilli menyu sayti, restoran xodimlari uchun himoyalangan boshqaruv paneli va Django REST API.
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ Arxitektura
 
-| Component | Tech Stack | Default Port | Description |
+| Komponent | Texnologiya | Port | Tavsif |
 | :--- | :--- | :--- | :--- |
-| **Frontend Client** (Server 1) | React 18, Vite, Tailwind CSS, `react-i18next`, Lucide Icons | `5173` | Interactive restaurant menu for diners with instant search, category filters, and nutritional drawers. |
-| **Frontend Admin** (Server 2) | React 18, Vite, Tailwind CSS, `react-i18next`, Lucide Icons | `5174` | Dashboard with 20% desktop sidebar, guarded product creation, full CRUD, duplicate actions, and live photo uploads. |
-| **Backend API** | Django 4.2+, Django REST Framework, CORS Headers, Pillow | `8000` | REST API with multilingual models, PostgreSQL / SQLite engine, filtering, search, and image storage. |
-| **Database** | PostgreSQL / SQLite3 | `5432` | Relational storage for categories, dishes, nutritional facts, and translations. |
+| **Client** (`/client`) | React 18, Vite, Tailwind, react-i18next | `5173` | Mijozlar uchun menyu: qidiruv, kategoriya filtri, ozuqaviy qiymat |
+| **Admin** (`/admin`) | React 18, Vite, Tailwind, react-i18next | `5174` | Login bilan himoyalangan CRUD paneli |
+| **Backend** (`/backend`) | Django 5, DRF, Token Auth | `8000` | REST API, ko'p tilli modellar, avtomatik tarjima |
+| **Database** | PostgreSQL (prod) / SQLite (lokal) | `5432` | Kategoriyalar, taomlar, ozuqaviy qiymatlar |
 
 ---
 
-## 🎨 Design System & Color Palette
+## 🔐 Xavfsizlik modeli
 
-- **Primary Background**: `#1F1915` (Deep Dark Brown)
-- **Card / Modal Background**: `#2B231D` (Medium Dark Brown)
-- **Sidebar Background**: `#16120F` (Darker Brown)
-- **Accent / Gold Highlight**: `#D4A359` (Warm Gold / Mustard) & `#B8863B` (Hover Gold)
-- **Text & Borders**: `#FFFFFF` / `#F5EBE0` (Cream White), `#A89F91` (Muted Sand), `#3D332B` (Subtle Border)
-- **Typography**: `Playfair Display` (Serif headers) & `Outfit` / `Inter` (Sans-serif UI)
-
----
-
-## ✨ Key Features
-
-### 1. Client Menu Website (`/client`)
-- **Header**:
-  - Brand Logo: **"Mehmon RESTAURANT"**
-  - Integrated Search Bar: Compact and non-intrusive header search across all multilingual titles and descriptions.
-  - Language Switcher: 3 languages (**UZ**, **RU**, **EN**) with persistent storage.
-- **Main Content**:
-  - Horizontal scrollable category tabs (**All**, **Main Courses**, **Kebabs**, **Salads**, etc.).
-  - Responsive Product Grid with high-resolution food cards.
-  - **Collapsible Nutritional Macros Section**:
-    - Portion weight (e.g., `450g`)
-    - Energy: Calories (`kcal`)
-    - Macros: Protein (Oqsil), Fat (Yog'), Carbohydrates (Uglevod)
-- **Footer**:
-  - Strictly minimalist footer containing: `Created by @Sunnataliyev and @AnakinSkaywalker`.
-
-### 2. Admin Panel Portal (`/admin`)
-- **Header**:
-  - Logo on the left, **"Hush kelibsiz admin"** in the middle, and 3-language selector on the right.
-- **Layout**:
-  - Desktop: Left sidebar taking **20% of the screen width** with tabs:
-    1. **Products (Taomlar)**
-    2. **Categories (Kategoriyalar)**
-  - Mobile / Tablet: Responsive bottom navigation bar.
-- **Business Logic & Guards**:
-  - **Product Creation Guard Clause**: When clicking *"Add Product"* (Taom qo'shish), if no categories exist in the DB, a warning prompt (*"Oldin kategoriya yarating"*) appears and redirects the user directly to the Category Creation modal.
-  - **Product Form**:
-    - Category dropdown
-    - Multilingual names & descriptions (UZ, RU, EN)
-    - Price & Portion weight (g)
-    - Nutritional values: Calories, Protein, Fat, Carbohydrates
-    - Image file upload with thumbnail preview + URL fallback.
-  - **Product Actions**:
-    - **Edit** (Tahrirlash)
-    - **Duplicate / Copy** (Nusxa) — clones the product instantly
-    - **Delete** (O'chirish) — with confirmation safeguard.
+- **O'qish ochiq**: `GET /api/categories/`, `GET /api/products/` — hammaga, tokensiz.
+- **Yozish yopiq**: `POST` / `PUT` / `PATCH` / `DELETE` — faqat amal qiluvchi token bilan.
+- **Ommaviy o'chirish yanada qat'iy**: `delete-all` va `delete-selected` — faqat `is_staff` hisob.
+- Admin panel token'ni `localStorage`da saqlaydi; server token'ni rad etsa panel avtomatik login ekraniga qaytadi.
+- Ishlab chiqarishda `DJANGO_SECRET_KEY` va `DATABASE_URL` majburiy — ularsiz server ishga tushmaydi.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Ishga tushirish
 
-### Option 1: One-Click Startup (Windows)
-Double-click `start.bat` in the project root directory. It will automatically run migrations, seed authentic initial data, and launch the backend (port 8000), client (port 5173), and admin (port 5174).
+### 1-variant: bitta buyruq (lokal)
 
----
-
-### Option 2: Docker Compose (PostgreSQL + All Apps)
-Ensure Docker is running and run:
 ```bash
-docker-compose up --build
+./start.sh          # macOS / Linux
+start.bat           # Windows
+```
+
+Skript virtualenv yaratadi, kutubxonalarni o'rnatadi, migratsiya va seed qiladi,
+`admin` hisobini yaratib parolini chop etadi, so'ng uchala servisni ishga tushiradi.
+
+### 2-variant: Docker Compose
+
+```bash
+cp .env.example .env      # DJANGO_SECRET_KEY va DB_PASSWORD ni to'ldiring
+docker compose up --build
+```
+
+Backend gunicorn bilan, frontendlar esa nginx orqali production build sifatida ishlaydi.
+
+### 3-variant: qo'lda
+
+```bash
+# Backend
+cd backend
+python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+cp .env.example .env         # DEBUG=True qo'ying (lokalda SQLite ishlatiladi)
+./venv/bin/python manage.py migrate
+./venv/bin/python manage.py seed_data
+./venv/bin/python manage.py create_admin      # admin hisobi + token
+./venv/bin/python manage.py runserver 0.0.0.0:8000
+
+# Client (yangi terminal)
+cd client && npm install && npm run dev
+
+# Admin (yangi terminal)
+cd admin && npm install && npm run dev
 ```
 
 ---
 
-### Option 3: Manual Step-by-Step Setup
+## 👤 Admin hisobi
 
-#### 1. Backend Setup (Terminal 1)
 ```bash
 cd backend
-pip install -r requirements.txt
-
-# Run migrations and seed data
-python manage.py migrate
-python manage.py seed_data
-
-# Start backend server
-python manage.py runserver 0.0.0.0:8000
+./venv/bin/python manage.py create_admin
 ```
-API will be accessible at: `http://localhost:8000/api/`
 
-#### 2. Client Menu Website (Terminal 2)
+Parolni o'zingiz belgilash uchun:
+
 ```bash
-cd client
-npm install
-npm run dev
+ADMIN_USERNAME=mehmon ADMIN_PASSWORD='kuchli-parol' ./venv/bin/python manage.py create_admin
+# yoki mavjud hisob parolini almashtirish:
+./venv/bin/python manage.py create_admin --username mehmon --password 'yangi-parol' --reset-password
 ```
-Client menu will open at: `http://localhost:5173`
 
-#### 3. Admin Panel (Terminal 3)
+---
+
+## ⚙️ Muhit o'zgaruvchilari (backend)
+
+To'liq ro'yxat va izohlar: [`backend/.env.example`](backend/.env.example).
+
+| O'zgaruvchi | Majburiy | Tavsif |
+| :--- | :--- | :--- |
+| `DJANGO_SECRET_KEY` | prod'da ha | Django maxfiy kaliti |
+| `DATABASE_URL` | prod'da ha | PostgreSQL ulanish satri |
+| `DEBUG` | yo'q | `True` — lokal rejim (SQLite, ochiq CORS). Standart: `False` |
+| `ALLOWED_HOSTS` | prod'da tavsiya | Vergul bilan ajratilgan domenlar |
+| `CORS_ALLOWED_ORIGINS` | prod'da tavsiya | Frontend domenlari |
+| `MEDIA_ROOT` | yo'q | Yuklangan rasmlar uchun doimiy disk yo'li |
+| `AUTO_TRANSLATE` | yo'q | `False` — tashqi tarjima so'rovlarini o'chiradi |
+
+**Muhim:** production'da `DATABASE_URL` bo'lmasa server ataylab ishga tushmaydi.
+Bu SQLite'ga tushib qolib, konteyner qayta ishga tushganda butun menyu yo'qolishining oldini oladi.
+
+---
+
+## 🖼️ Rasmlar haqida
+
+Render kabi platformalarda konteyner diski vaqtinchalik: har deploy'da yuklangan
+fayllar o'chadi. Ikkita yo'l bor:
+
+1. Doimiy disk ulab, `MEDIA_ROOT` ni o'sha yo'lga qarating (`render.yaml` da tayyor).
+2. Yoki taom uchun tashqi **rasm havolasi (URL)** maydonidan foydalaning.
+
+---
+
+## 📡 REST API
+
+**Autentifikatsiya**
+
+- `POST /api/auth/login/` — `{username, password}` → `{token, user}` (daqiqasiga 10 urinish)
+- `POST /api/auth/logout/` — token'ni bekor qiladi
+- `GET  /api/auth/me/` — token amal qilishini tekshiradi
+
+So'rovlarda: `Authorization: Token <token>`
+
+**Kategoriyalar**
+
+- `GET    /api/categories/` — ro'yxat (`?is_active=true`, `?search=`) · ochiq
+- `POST   /api/categories/` · `PATCH /api/categories/{id}/` · `DELETE /api/categories/{id}/` — token
+- `POST   /api/categories/delete-all/` · `POST /api/categories/delete-selected/` — staff
+
+**Taomlar**
+
+- `GET    /api/products/` — ro'yxat (`?category=`, `?is_active=`, `?is_recommended=`, `?search=`) · ochiq
+- `POST   /api/products/` — multipart rasm yuklash bilan · token
+- `PATCH  /api/products/{id}/` · `DELETE /api/products/{id}/` — token
+- `POST   /api/products/{id}/duplicate/` — nusxa ko'chirish · token
+- `POST   /api/products/delete-all/` · `POST /api/products/delete-selected/` — staff
+
+---
+
+## ✨ Imkoniyatlar
+
+### Mijoz sayti (`/client`)
+- 3 tilli interfeys (UZ / RU / EN), tanlov saqlanadi
+- Kunduzgi / kechqurungi rejim
+- Barcha tillar bo'yicha bir vaqtda qidiruv
+- Kategoriya filtri (restoran belgilagan `sort_order` tartibida)
+- Taom kartochkasi: rasm, narx, tavsif va ochiladigan **ozuqaviy qiymat** bo'limi
+  (porsiya, kaloriya, oqsil, yog', uglevod)
+- Tavsiya etilgan taomlar doim yuqorida
+- Aloqa uzilsa oxirgi menyu ekranda qoladi va ogohlantirish chiqadi
+
+### Admin panel (`/admin`)
+- Login ekrani; sessiya tugasa avtomatik qaytariladi
+- Taomlar va kategoriyalar uchun to'liq CRUD
+- Bitta maydonga nom yozilsa — avtomatik 3 tilga tarjima; kerak bo'lsa **qo'lda tarjima** kiritish mumkin
+- Ozuqaviy qiymat maydonlari (porsiya, kaloriya, BJU)
+- Rasm yuklash (JPEG/PNG/WEBP/GIF, 10 MB gacha) yoki tashqi URL
+- Nusxa ko'chirish, ko'p tanlab o'chirish, tasdiqlash oynalari
+- Kategoriya bo'lmasa taom qo'shishga yo'l qo'ymaydigan guard
+- Xatolar aniq matn bilan ko'rsatiladi (DRF validatsiya xabarlari ham)
+
+---
+
+## 🧪 Testlar
+
 ```bash
-cd admin
-npm install
-npm run dev
+cd backend
+DEBUG=True ./venv/bin/python manage.py test menu
 ```
-Admin dashboard will open at: `http://localhost:5174`
+
+30 ta test: ruxsatlar, autentifikatsiya, ommaviy o'chirish, validatsiya,
+tarjima chaqiruvlari va matn formatlash qamrab olingan. Testlar tarmoqqa chiqmaydi.
 
 ---
 
-## 🗄️ PostgreSQL Database Configuration
-
-To connect Django to your PostgreSQL instance, set the following environment variables (or in your `.env` file):
-
-```ini
-DB_NAME=mehmon_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
-```
-*Note: If PostgreSQL variables are omitted, Django will automatically use SQLite (`db.sqlite3`) for instant zero-config development.*
-
----
-
-## 📡 REST API Endpoints
-
-- `GET /api/categories/` — List all categories (filterable by `?is_active=true`)
-- `POST /api/categories/` — Create new category
-- `GET /api/categories/{id}/` — Retrieve category details
-- `PUT/PATCH /api/categories/{id}/` — Update category
-- `DELETE /api/categories/{id}/` — Delete category
-
-- `GET /api/products/` — List all products (supports `?category_id=`, `?search=`, `?is_active=true`)
-- `POST /api/products/` — Create new product with multipart image upload
-- `GET /api/products/{id}/` — Retrieve product details
-- `PUT/PATCH /api/products/{id}/` — Update product details / image
-- `DELETE /api/products/{id}/` — Delete product
-- `POST /api/products/{id}/duplicate/` — Duplicate product into a new copy
-
----
-
-## 👨‍💻 Authors & Credits
-Created by **@Sunnataliyev** and **@AnakinSkaywalker**.
+## 👨‍💻 Mualliflar
+Created by **@Sunnatal1yev** and **@AnakinSkaywalker**.

@@ -13,13 +13,8 @@ export default function CategoryFilter({ categories, activeCategoryId, onSelectC
     return cat.name_uz || cat.name_ru || cat.name_en;
   };
 
-  const sortedCategories = React.useMemo(() => {
-    return [...categories].sort((a, b) => {
-      const nameA = getCategoryName(a) || '';
-      const nameB = getCategoryName(b) || '';
-      return nameA.localeCompare(nameB, i18n.language || 'uz', { sensitivity: 'base' });
-    });
-  }, [categories, i18n.language]);
+  // Categories arrive already ordered by sort_order, which is what the restaurant
+  // set in the admin panel. Re-sorting alphabetically here put desserts before soups.
 
   return (
     <div className="py-2 overflow-x-auto no-scrollbar scroll-smooth">
@@ -38,7 +33,7 @@ export default function CategoryFilter({ categories, activeCategoryId, onSelectC
         </button>
 
         {/* Dynamic Alphabetically Sorted Category List */}
-        {sortedCategories.map((cat) => {
+        {categories.map((cat) => {
           const isActive = activeCategoryId === cat.id;
           return (
             <button

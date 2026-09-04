@@ -9,11 +9,49 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-mehmon-luxury-restaurant-secret-key-2026')
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+def env_bool(name, default=False):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = ['*']
+
+def env_list(name, default=None):
+    raw = (os.environ.get(name) or '').strip()
+    if not raw:
+        return list(default or [])
+    return [item.strip() for item in raw.split(',') if item.strip()]
+
+
+IS_RENDER = env_bool('RENDER') or bool(os.environ.get('RENDER_SERVICE_ID'))
+
+# DEBUG defaults to False; local development opts in via DEBUG=True in backend/.env
+DEBUG = env_bool('DEBUG', default=False) and not IS_RENDER
+IS_PRODUCTION = not DEBUG
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY environment variable is required in production. "
+            "Generate one with: python -c \"from django.core.management.utils import "
+            "get_random_secret_key; print(get_random_secret_key())\""
+        )
+    # Development-only throwaway key. Never used when DEBUG=False.
+    SECRET_KEY = 'django-insecure-local-development-only-do-not-deploy'
+
+# Hosts allowed to serve this app. Set ALLOWED_HOSTS as a comma separated list in production.
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS')
+if not ALLOWED_HOSTS:
+    if DEBUG:
+        ALLOWED_HOSTS = ['*']
+    else:
+        # Render injects the external hostname; keep the service reachable out of the box.
+        ALLOWED_HOSTS = ['.onrender.com']
+render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_host and render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_host)
 
 # Application definition
 INSTALLED_APPS = [
@@ -23,9 +61,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
 
@@ -36,6 +75,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -64,22 +104,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database Configuration (Neon.tech PostgreSQL persistent cloud database / Docker / SQLite)
-# Production / Render MUST use PostgreSQL to guarantee persistent data across container restarts.
-DEFAULT_NEON_DB = 'postgresql://neondb_owner:npg_EfkOKiANYm31@ep-lively-truth-b2444tdn-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
+# Database Configuration (PostgreSQL in production, SQLite for local development).
+# Production MUST use PostgreSQL: Render's filesystem is ephemeral, so a SQLite file
+# is wiped on every container restart.
+DATABASE_URL = (os.environ.get('DATABASE_URL') or '').strip()
 
-raw_db_url = (os.environ.get('DATABASE_URL') or '').strip()
-DATABASE_URL = raw_db_url if raw_db_url else DEFAULT_NEON_DB
-
-IS_RENDER = os.environ.get('RENDER') == 'true' or bool(os.environ.get('RENDER_SERVICE_ID'))
-IS_PRODUCTION = (not DEBUG) or IS_RENDER
-
-if DATABASE_URL and ('postgres' in DATABASE_URL or 'postgresql' in DATABASE_URL):
+if DATABASE_URL.startswith('postgres'):
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=0,  # conn_max_age=0 prevents dead pooled connections with Neon serverless compute
-            ssl_require=True
+            # conn_max_age=0 prevents dead pooled connections with Neon serverless compute
+            conn_max_age=int(os.environ.get('DB_CONN_MAX_AGE', '0')),
+            ssl_require=env_bool('DB_SSL_REQUIRE', default=True),
         )
     }
 elif os.environ.get('DB_HOST'):
@@ -88,18 +124,18 @@ elif os.environ.get('DB_HOST'):
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.environ.get('DB_NAME', 'mehmon_db'),
             'USER': os.environ.get('DB_USER', 'mehmon_user'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'mehmon_secure_password_2026'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST'),
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
+elif IS_PRODUCTION:
+    raise RuntimeError(
+        "DATABASE_URL (PostgreSQL) is required in production. SQLite is refused here "
+        "because the container filesystem is ephemeral and all menu data would be lost "
+        "on restart. Set DATABASE_URL in your hosting provider's environment variables."
+    )
 else:
-    if IS_PRODUCTION:
-        # Strict safeguard: Never allow fallback to ephemeral SQLite on Render or Production!
-        raise RuntimeError(
-            "CRITICAL: PostgreSQL DATABASE_URL is required on Render/Production! "
-            "SQLite is strictly forbidden to prevent ephemeral data loss on container restarts."
-        )
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -121,21 +157,43 @@ TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, Images) — served by WhiteNoise in production
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
-# Media files for uploaded food images
+# Media files for uploaded food images.
+# On Render, point MEDIA_ROOT at a mounted persistent disk (e.g. /var/data/media),
+# otherwise uploads disappear on every deploy. Without a disk, use the image_url field.
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.environ.get('MEDIA_ROOT') or (BASE_DIR / 'media'))
+
+# Reject oversized uploads before they reach disk (10 MB)
+MAX_UPLOAD_IMAGE_SIZE = int(os.environ.get('MAX_UPLOAD_IMAGE_SIZE', 10 * 1024 * 1024))
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_IMAGE_SIZE + (1024 * 1024)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Auto-translation of menu names/descriptions via public Google endpoints.
+# Disable (AUTO_TRANSLATE=False) to keep writes fully offline and instant.
+AUTO_TRANSLATE = env_bool('AUTO_TRANSLATE', default=True)
 
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'core.authentication.CsrfExemptSessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # The public menu is readable by anyone; every write requires a valid admin token.
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -143,54 +201,91 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_PAGINATION_CLASS': None,  # Return direct lists for menu & admin smoothly
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '10/min',
+    },
 }
 
-# CORS & CSRF Settings for Client & Admin (Local + Production)
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+# CORS & CSRF Settings for Client & Admin
+CORS_ALLOW_CREDENTIALS = False  # Auth uses a bearer-style token header, not cookies
 
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+DEFAULT_DEV_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:3000',
 ]
+
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGIN_REGEXES = env_list('CORS_ALLOWED_ORIGIN_REGEXES')
+
+if DEBUG:
+    # Local development: allow any origin so phones on the LAN can reach the dev server.
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    if not CORS_ALLOWED_ORIGINS and not CORS_ALLOWED_ORIGIN_REGEXES:
+        # Sensible default for the Vercel/Netlify deployments this project ships with.
+        CORS_ALLOWED_ORIGIN_REGEXES = [
+            r'^https://.*\.vercel\.app$',
+            r'^https://.*\.netlify\.app$',
+            r'^https://.*\.onrender\.com$',
+        ]
+
+CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
     'authorization',
+    'cache-control',
     'content-type',
     'dnt',
     'origin',
+    'pragma',
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:3000",
-    "https://*.vercel.app",
-    "https://*.netlify.app",
-    "https://*.onrender.com",
-    "https://*.railway.app",
-    "https://*.koyeb.app",
+CSRF_TRUSTED_ORIGINS = DEFAULT_DEV_ORIGINS + [
+    'https://*.vercel.app',
+    'https://*.netlify.app',
+    'https://*.onrender.com',
 ]
-
-# Additional trusted origins from environment variable if provided
-EXTRA_CSRF = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
-if EXTRA_CSRF:
-    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in EXTRA_CSRF.split(',') if origin.strip()])
+CSRF_TRUSTED_ORIGINS += env_list('CSRF_TRUSTED_ORIGINS')
 
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False
 
+# Production hardening
+if IS_PRODUCTION:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 60 * 60 * 24 * 30))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    X_FRAME_OPTIONS = 'DENY'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.environ.get('LOG_LEVEL', 'INFO'),
+    },
+}

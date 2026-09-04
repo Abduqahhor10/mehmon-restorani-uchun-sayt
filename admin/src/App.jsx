@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AdminHeader from './components/AdminHeader';
 import Sidebar from './components/Sidebar';
@@ -7,9 +7,13 @@ import CategoriesTab from './components/CategoriesTab';
 import GuardModal from './components/GuardModal';
 import CategoryModal from './components/CategoryModal';
 import ProductModal from './components/ProductModal';
-import { getCategories, getProducts } from './services/api';
-import { Loader2 } from 'lucide-react';
+import LoginScreen from './components/LoginScreen';
+import { describeApiError, getCategories, getProducts } from './services/api';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+const SYNC_INTERVAL_MS = 8000;
 
 function AdminContent() {
   const { t } = useTranslation();
@@ -17,6 +21,7 @@ function AdminContent() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState(null);
 
   // Modals state
   const [isGuardOpen, setIsGuardOpen] = useState(false);
@@ -25,88 +30,84 @@ function AdminContent() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
 
-  const fetchData = async (isInitial = false) => {
+  // Background polling must not yank data out from under an open form.
+  const isModalOpen = isCategoryModalOpen || isProductModalOpen;
+  const isModalOpenRef = useRef(isModalOpen);
+  isModalOpenRef.current = isModalOpen;
+
+  const fetchData = useCallback(async (isInitial = false) => {
     if (isInitial) setLoading(true);
     try {
-      const [cats, prods] = await Promise.all([
-        getCategories(),
-        getProducts(),
-      ]);
-      setCategories(Array.isArray(cats) ? cats : []);
-      setProducts(Array.isArray(prods) ? prods : []);
+      const [cats, prods] = await Promise.all([getCategories(), getProducts()]);
+      if (Array.isArray(cats)) setCategories(cats);
+      if (Array.isArray(prods)) setProducts(prods);
+      setSyncError(null);
     } catch (err) {
-      console.warn('API error (Admin):', err.message);
+      // Keep the last known good data on screen and tell the user sync is broken,
+      // instead of silently showing a stale or empty panel.
+      setSyncError(describeApiError(err));
     } finally {
       if (isInitial) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Initial fetch with full loader
     fetchData(true);
 
-    // Auto-sync every 3.5 seconds in background when tab is active
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
+    const backgroundSync = () => {
+      if (document.visibilityState === 'visible' && !isModalOpenRef.current) {
         fetchData(false);
       }
-    }, 3500);
+    };
 
-    // Refresh immediately when window / browser tab gains focus
-    const handleFocus = () => fetchData(false);
-    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(backgroundSync, SYNC_INTERVAL_MS);
+    window.addEventListener('focus', backgroundSync);
 
     // Cross-tab broadcast listener
     let bc;
     try {
       if ('BroadcastChannel' in window) {
         bc = new BroadcastChannel('mehmon_sync_channel');
-        bc.onmessage = () => fetchData(false);
+        bc.onmessage = backgroundSync;
       }
-    } catch (e) {}
+    } catch {
+      // BroadcastChannel unavailable: polling and the storage event still cover us.
+    }
 
     const handleStorage = (e) => {
-      if (e.key === 'mehmon_menu_update') {
-        fetchData(false);
-      }
+      if (e.key === 'mehmon_menu_update') backgroundSync();
     };
     window.addEventListener('storage', handleStorage);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', backgroundSync);
       window.removeEventListener('storage', handleStorage);
       if (bc) bc.close();
     };
-  }, []);
+  }, [fetchData]);
 
   // Instant optimistic state update when Category is saved
   const handleCategorySaved = (savedCategory, isEdit) => {
     if (savedCategory) {
-      setCategories((prev) => {
-        if (isEdit) {
-          return prev.map((c) => (c.id === savedCategory.id ? { ...c, ...savedCategory } : c));
-        } else {
-          return [...prev.filter((c) => c.id !== savedCategory.id), savedCategory];
-        }
-      });
+      setCategories((prev) =>
+        isEdit
+          ? prev.map((c) => (c.id === savedCategory.id ? { ...c, ...savedCategory } : c))
+          : [...prev.filter((c) => c.id !== savedCategory.id), savedCategory]
+      );
     }
-    // Silent background sync to ensure full backend alignment
     fetchData(false);
   };
 
   // Instant optimistic state update when Product is saved
   const handleProductSaved = (savedProduct, isEdit) => {
     if (savedProduct) {
-      setProducts((prev) => {
-        if (isEdit) {
-          return prev.map((p) => (p.id === savedProduct.id ? { ...p, ...savedProduct } : p));
-        } else {
-          return [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)];
-        }
-      });
+      setProducts((prev) =>
+        isEdit
+          ? prev.map((p) => (p.id === savedProduct.id ? { ...p, ...savedProduct } : p))
+          : [savedProduct, ...prev.filter((p) => p.id !== savedProduct.id)]
+      );
     }
-    // Silent background sync to ensure full backend alignment
     fetchData(false);
   };
 
@@ -122,12 +123,12 @@ function AdminContent() {
 
   // Redirect from Guard Modal to Category Modal
   const handleGoToCreateCategory = () => {
+    setIsGuardOpen(false);
     setActiveTab('categories');
     setCategoryToEdit(null);
     setIsCategoryModalOpen(true);
   };
 
-  // Category Actions
   const handleOpenAddCategory = () => {
     setCategoryToEdit(null);
     setIsCategoryModalOpen(true);
@@ -138,7 +139,6 @@ function AdminContent() {
     setIsCategoryModalOpen(true);
   };
 
-  // Product Actions
   const handleOpenEditProduct = (prod) => {
     setProductToEdit(prod);
     setIsProductModalOpen(true);
@@ -146,14 +146,21 @@ function AdminContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-mehmon-bg text-mehmon-text transition-colors duration-300">
-      
-      {/* Admin Header */}
+
       <AdminHeader />
 
-      {/* Main Layout with 20% Sidebar */}
+      {syncError && (
+        <div
+          role="status"
+          className="flex items-center gap-2 px-4 sm:px-6 lg:px-8 py-2 bg-red-950/20 border-b border-red-500/40 text-xs text-red-500"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>{t('admin.sync_error', { message: syncError })}</span>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col md:flex-row">
-        
-        {/* Sidebar */}
+
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -161,9 +168,7 @@ function AdminContent() {
           categoriesCount={categories.length}
         />
 
-        {/* Content View */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto pb-24 md:pb-8">
-          
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 text-mehmon-gold animate-spin" />
@@ -184,18 +189,15 @@ function AdminContent() {
               onRefresh={() => fetchData(false)}
             />
           )}
-
         </main>
       </div>
 
-      {/* Guard Clause Modal */}
       <GuardModal
         isOpen={isGuardOpen}
         onClose={() => setIsGuardOpen(false)}
         onGoToCreateCategory={handleGoToCreateCategory}
       />
 
-      {/* Category Creation / Edit Modal */}
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
@@ -203,7 +205,6 @@ function AdminContent() {
         onSaved={handleCategorySaved}
       />
 
-      {/* Product Creation / Edit Modal */}
       <ProductModal
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
@@ -216,10 +217,26 @@ function AdminContent() {
   );
 }
 
+function AuthGate() {
+  const { isAuthenticated, isChecking } = useAuth();
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-mehmon-bg">
+        <Loader2 className="w-8 h-8 text-mehmon-gold animate-spin" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <AdminContent /> : <LoginScreen />;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
-      <AdminContent />
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

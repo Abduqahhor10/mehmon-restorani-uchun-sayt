@@ -1,18 +1,21 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: mehmon_postgres
     restart: always
     environment:
-      POSTGRES_DB: mehmon_db
-      POSTGRES_USER: mehmon_user
-      POSTGRES_PASSWORD: mehmon_secure_password_2026
+      POSTGRES_DB: ${DB_NAME:-mehmon_db}
+      POSTGRES_USER: ${DB_USER:-mehmon_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in a .env file next to docker-compose.yml}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mehmon_user} -d ${DB_NAME:-mehmon_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
     build:
@@ -21,17 +24,20 @@ services:
     container_name: mehmon_backend
     restart: always
     environment:
-      - DEBUG=True
-      - DJANGO_SECRET_KEY=mehmon-secret-production-key-2026
-      - DB_NAME=mehmon_db
-      - DB_USER=mehmon_user
-      - DB_PASSWORD=mehmon_secure_password_2026
-      - DB_HOST=db
-      - DB_PORT=5432
+      DEBUG: "False"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in a .env file next to docker-compose.yml}
+      DATABASE_URL: postgresql://${DB_USER:-mehmon_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-mehmon_db}
+      DB_SSL_REQUIRE: "False"
+      SECURE_SSL_REDIRECT: "False"
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:5174
+      CSRF_TRUSTED_ORIGINS: http://localhost:5173,http://localhost:5174
+      MEDIA_ROOT: /app/media
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend/media:/app/media
 
@@ -39,12 +45,12 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${CLIENT_API_URL:-http://localhost:8000/api}
     container_name: mehmon_client_menu
     restart: always
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000/api
+      - "5173:80"
     depends_on:
       - backend
 
@@ -52,12 +58,12 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${ADMIN_API_URL:-http://localhost:8000/api}
     container_name: mehmon_admin_panel
     restart: always
     ports:
-      - "5174:5174"
-    environment:
-      - VITE_API_URL=http://localhost:8000/api
+      - "5174:80"
     depends_on:
       - backend
 

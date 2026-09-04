@@ -23,7 +23,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 20000,
 });
 
 // Cache-busting interceptor: prevents browser 304/memory cache on GET queries
@@ -35,29 +35,27 @@ apiClient.interceptors.request.use((config) => {
     };
     config.headers = {
       ...config.headers,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
+      'Cache-Control': 'no-cache',
     };
   }
   return config;
 });
 
+/**
+ * The menu fetchers reject on failure instead of returning [].
+ *
+ * Swallowing the error and returning an empty array made a single dropped request
+ * look exactly like "the restaurant has no dishes", so a brief network hiccup wiped
+ * the whole menu off the screen. The caller now keeps the last good data instead.
+ */
 export const getCategories = async () => {
-  try {
-    const response = await apiClient.get('/categories/?is_active=true');
-    return response.data;
-  } catch (error) {
-    console.warn('Backend API connection warning (Categories):', error.message);
-    return [];
-  }
+  const response = await apiClient.get('/categories/', { params: { is_active: true } });
+  return Array.isArray(response.data) ? response.data : [];
 };
 
 export const getProducts = async (params = {}) => {
-  try {
-    const response = await apiClient.get('/products/', { params: { is_active: true, ...params } });
-    return response.data;
-  } catch (error) {
-    console.warn('Backend API connection warning (Products):', error.message);
-    return [];
-  }
+  const response = await apiClient.get('/products/', {
+    params: { is_active: true, ...params },
+  });
+  return Array.isArray(response.data) ? response.data : [];
 };

@@ -1,9 +1,22 @@
-# Backend ichidagilar uchun
+# Backend
 backend/venv/
+backend/.venv/
 backend/db.sqlite3
-backend/.env
+backend/media/
+backend/staticfiles/
+__pycache__/
+*.pyc
 
-# Frontend (client va admin) uchun
+# Secrets — never commit real environment files
+.env
+.env.local
+**/.env
+**/.env.local
+!**/.env.example
+
+# Frontend (client va admin)
 **/node_modules/
 **/dist/
+
 .DS_Store
+.vscode/

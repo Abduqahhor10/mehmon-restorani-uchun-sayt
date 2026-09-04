@@ -3,10 +3,23 @@ import urllib.parse
 import json
 import re
 import logging
-from functools import lru_cache
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
+
+# Bounded cache of *successful* translations only. A failed lookup must not be
+# memoised, otherwise a single network blip would permanently pin a dish to its
+# untranslated name for the lifetime of the process.
+_TRANSLATION_CACHE = {}
+_TRANSLATION_CACHE_MAX = 2048
+_TRANSLATION_CACHE_LOCK = threading.Lock()
+
+GTX_TIMEOUT = 1.5
+DICT_TIMEOUT = 1.0
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
 
 # Common food & category dictionary for instantaneous, 0-latency translations
 FOOD_DICT = {
@@ -81,16 +94,30 @@ def format_title_case(text: str) -> str:
     lower = cleaned.lower()
     return re.sub(r'(^|[\s\-/([{\"\«\“])([^\s\-/([{\"\«\“])', lambda m: m.group(1) + m.group(2).upper(), lower)
 
-@lru_cache(maxsize=1024)
+def _cache_get(key):
+    with _TRANSLATION_CACHE_LOCK:
+        return _TRANSLATION_CACHE.get(key)
+
+
+def _cache_put(key, value):
+    with _TRANSLATION_CACHE_LOCK:
+        if len(_TRANSLATION_CACHE) >= _TRANSLATION_CACHE_MAX:
+            _TRANSLATION_CACHE.clear()
+        _TRANSLATION_CACHE[key] = value
+
+
 def translate_text(text, target_lang='uz', source_lang='auto'):
     """
-    Translates text with dictionary lookup and multiple Google endpoints fallback.
-    Cached with aggressive short timeouts (1.0s) so it never hangs database writes.
+    Translates text with a local food dictionary first, then two Google endpoints.
+
+    Short timeouts keep database writes responsive. Only successful translations are
+    cached, so a transient network failure does not permanently freeze a bad result.
+    Returns the input unchanged when every strategy fails.
     """
     if not text or not str(text).strip():
         return ''
     cleaned = str(text).strip()
-    
+
     # Check food dictionary first (0ms)
     lowered = cleaned.lower()
     if lowered in FOOD_DICT:
@@ -98,32 +125,52 @@ def translate_text(text, target_lang='uz', source_lang='auto'):
         if dict_val:
             return dict_val
 
-    # Strategy 1: Google Translate GTX endpoint (fast 1.0s timeout)
+    if not getattr(settings, 'AUTO_TRANSLATE', True):
+        return cleaned
+
+    cache_key = (lowered, target_lang, source_lang)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Strategy 1: Google Translate GTX endpoint
     try:
-        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q=" + urllib.parse.quote(cleaned)
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-        with urllib.request.urlopen(req, timeout=1.0) as response:
+        url = (
+            "https://translate.googleapis.com/translate_a/single"
+            f"?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q="
+            + urllib.parse.quote(cleaned)
+        )
+        req = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})
+        with urllib.request.urlopen(req, timeout=GTX_TIMEOUT) as response:
             data = json.loads(response.read().decode('utf-8'))
             parts = [part[0] for part in data[0] if part and len(part) > 0 and part[0]]
             res = ''.join(parts).strip()
             if res:
+                _cache_put(cache_key, res)
                 return res
     except Exception as e:
-        logger.debug(f"Google GTX translation skipped/error: {e}")
+        logger.debug("Google GTX translation skipped/error: %s", e)
 
-    # Strategy 2: Google Dict endpoint (0.8s timeout)
+    # Strategy 2: Google Dict endpoint
     try:
-        url2 = f"https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={source_lang}&tl={target_lang}&q=" + urllib.parse.quote(cleaned)
-        req2 = urllib.request.Request(url2, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-        with urllib.request.urlopen(req2, timeout=0.8) as response2:
+        url2 = (
+            "https://clients5.google.com/translate_a/t"
+            f"?client=dict-chrome-ex&sl={source_lang}&tl={target_lang}&q="
+            + urllib.parse.quote(cleaned)
+        )
+        req2 = urllib.request.Request(url2, headers={'User-Agent': USER_AGENT})
+        with urllib.request.urlopen(req2, timeout=DICT_TIMEOUT) as response2:
             data2 = json.loads(response2.read().decode('utf-8'))
-            if isinstance(data2, list) and len(data2) > 0:
+            if isinstance(data2, list) and data2:
                 res2 = data2[0]
-                if isinstance(res2, list) and len(res2) > 0:
-                    return str(res2[0]).strip()
-                return str(res2).strip()
+                if isinstance(res2, list) and res2:
+                    res2 = res2[0]
+                res2 = str(res2).strip()
+                if res2:
+                    _cache_put(cache_key, res2)
+                    return res2
     except Exception as e2:
-        logger.debug(f"Google Dict translation skipped/error: {e2}")
+        logger.debug("Google Dict translation skipped/error: %s", e2)
 
     return cleaned
 

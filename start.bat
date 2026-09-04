@@ -1,28 +1,42 @@
 @echo off
+REM Mehmon Restaurant - local development launcher (backend + client + admin).
+setlocal
+set ROOT=%~dp0
+
 echo ===================================================
-echo     MEHMON RESTAURANT SYSTEM INITIALIZER
+echo     MEHMON RESTAURANT - LOCAL DEV
 echo ===================================================
+
+cd /d "%ROOT%backend"
+
+if not exist venv (
+    echo Creating Python virtualenv...
+    python -m venv venv
+)
+call venv\Scripts\pip.exe install -q --upgrade pip
+call venv\Scripts\pip.exe install -q -r requirements.txt
+
+REM DEBUG=True keeps local runs on SQLite with permissive CORS.
+set DEBUG=True
+
+call venv\Scripts\python.exe manage.py migrate --noinput
+call venv\Scripts\python.exe manage.py seed_data
+call venv\Scripts\python.exe manage.py create_admin
+
+start "Mehmon API" cmd /k "cd /d %ROOT%backend && set DEBUG=True && venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000"
+
+cd /d "%ROOT%client"
+if not exist node_modules call npm install
+start "Mehmon Client" cmd /k "cd /d %ROOT%client && npm run dev"
+
+cd /d "%ROOT%admin"
+if not exist node_modules call npm install
+start "Mehmon Admin" cmd /k "cd /d %ROOT%admin && npm run dev"
+
 echo.
-
-echo [1/3] Initializing Django Backend (Port 8000)...
-start "Mehmon Backend API (8000)" cmd /k "cd backend && (if exist venv\Scripts\activate call venv\Scripts\activate) && python manage.py migrate && python manage.py seed_data && python manage.py runserver 0.0.0.0:8000"
-
-timeout /t 3 /nobreak >nul
-
-echo [2/3] Initializing Client Menu Website (Port 5173)...
-start "Mehmon Client Menu (5173)" cmd /k "cd client && npm install && npm run dev"
-
-timeout /t 2 /nobreak >nul
-
-echo [3/3] Initializing Admin Panel Website (Port 5174)...
-start "Mehmon Admin Panel (5174)" cmd /k "cd admin && npm install && npm run dev"
-
+echo All services running:
+echo - Client: http://localhost:5173
+echo - Admin:  http://localhost:5174
+echo - API:    http://localhost:8000/api/
 echo.
-echo ===================================================
-echo  All services started successfully!
-echo  - Client Menu Website:  http://localhost:5173
-echo  - Admin Panel Portal:   http://localhost:5174
-echo  - Backend REST API:     http://localhost:8000/api/
-echo  - Django Admin:         http://localhost:8000/admin/
-echo ===================================================
 pause

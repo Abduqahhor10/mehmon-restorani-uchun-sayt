@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FolderPlus, Search, Edit2, Trash2, CheckCircle2, XCircle, CheckSquare, X, CheckCheck, Check } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
-import { deleteCategory, deleteAllCategories, deleteSelectedCategories } from '../services/api';
+import { deleteCategory, deleteAllCategories, deleteSelectedCategories, describeApiError } from '../services/api';
 
 export default function CategoriesTab({ categories, onAddCategory, onEditCategory, onRefresh }) {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState('');
+  const [actionError, setActionError] = useState(null);
 
   // Selection Mode State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -23,27 +24,23 @@ export default function CategoriesTab({ categories, onAddCategory, onEditCategor
   });
 
   const getCategoryName = (c) => {
-    const lang = i18n.language;
-    if (lang === 'ru' && c.name_ru) return c.name_ru;
-    if (lang === 'en' && c.name_en) return c.name_en;
+    const lang = (i18n.language || 'uz').toLowerCase();
+    if (lang.startsWith('ru') && c.name_ru) return c.name_ru;
+    if (lang.startsWith('en') && c.name_en) return c.name_en;
     return c.name_uz || c.name_ru || c.name_en;
   };
 
-  const filteredCategories = categories
-    .filter((c) => {
-      if (!search.trim()) return true;
-      const q = search.toLowerCase().trim();
-      return (
-        c.name_uz?.toLowerCase().includes(q) ||
-        c.name_ru?.toLowerCase().includes(q) ||
-        c.name_en?.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => {
-      const nameA = getCategoryName(a) || '';
-      const nameB = getCategoryName(b) || '';
-      return nameA.localeCompare(nameB, i18n.language || 'uz', { sensitivity: 'base' });
-    });
+  // Order comes from the backend (sort_order, then id) so the admin list matches
+  // exactly what diners see on the menu.
+  const filteredCategories = categories.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase().trim();
+    return (
+      c.name_uz?.toLowerCase().includes(q) ||
+      c.name_ru?.toLowerCase().includes(q) ||
+      c.name_en?.toLowerCase().includes(q)
+    );
+  });
 
   // Toggle selection for a single category
   const handleToggleSelect = (id) => {
@@ -126,10 +123,11 @@ export default function CategoriesTab({ categories, onAddCategory, onEditCategor
         await deleteCategory(confirmModal.targetId);
       }
       onRefresh();
+      setActionError(null);
       setConfirmModal({ isOpen: false, title: '', description: '', actionType: '', targetId: null, loading: false });
     } catch (err) {
-      alert('Xatolik yuz berdi: ' + err.message);
-      setConfirmModal((prev) => ({ ...prev, loading: false }));
+      setActionError(describeApiError(err));
+      setConfirmModal({ isOpen: false, title: '', description: '', actionType: '', targetId: null, loading: false });
     }
   };
 
@@ -139,6 +137,23 @@ export default function CategoriesTab({ categories, onAddCategory, onEditCategor
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 p-3 bg-red-950/20 border border-red-500/40 rounded-xl text-xs text-red-500"
+        >
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label={t('admin.cancel')}
+            className="shrink-0 hover:opacity-70"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-mehmon-card p-4 rounded-2xl border border-mehmon-border shadow-sm">
         {/* Search */}
@@ -296,7 +311,7 @@ export default function CategoriesTab({ categories, onAddCategory, onEditCategor
                 {!isSelectionMode ? (
                   <div className="flex items-center justify-between gap-2 pt-3 border-t border-mehmon-border">
                     <span className="text-[11px] text-mehmon-muted font-medium">
-                      {category.products_count ?? 0} ta taom
+                      #{category.sort_order ?? 0} · {t('admin.products_count', { count: category.products_count ?? 0 })}
                     </span>
                     
                     <div className="flex items-center gap-2">

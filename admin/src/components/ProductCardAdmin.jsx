@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Edit2, Copy, Trash2, CheckCircle2, XCircle, Loader2, Check } from 'lucide-react';
-import { duplicateProduct, deleteProduct } from '../services/api';
+import { describeApiError, duplicateProduct } from '../services/api';
 
 export default function ProductCardAdmin({
   product,
@@ -11,42 +11,17 @@ export default function ProductCardAdmin({
   isSelected = false,
   onToggleSelect,
   onDeleteSingle,
+  onError,
 }) {
   const { t, i18n } = useTranslation();
   const [loadingAction, setLoadingAction] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const FOOD_FALLBACKS = {
-    'чечевичный суп': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
-    'yasmiq sho\'rva': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
-    'lentil soup': { uz: "Yasmiq sho'rva", ru: "Чечевичный суп", en: "Lentil Soup" },
-    'плов': { uz: "Osh", ru: "Плов", en: "Pilaf" },
-    'osh': { uz: "Osh", ru: "Плов", en: "Pilaf" },
-    'суп': { uz: "Sho'rva", ru: "Суп", en: "Soup" },
-    'sho\'rva': { uz: "Sho'rva", ru: "Суп", en: "Soup" },
-    'лагман': { uz: "Lag'mon", ru: "Лагман", en: "Lagman" },
-    'lag\'mon': { uz: "Lag'mon", ru: "Лагман", en: "Lagman" },
-    'шашлык': { uz: "Shashlik", ru: "Шашлык", en: "Kebab" },
-    'shashlik': { uz: "Shashlik", ru: "Шашлык", en: "Kebab" },
-    'салат': { uz: "Salat", ru: "Салат", en: "Salad" },
-    'salat': { uz: "Salat", ru: "Салат", en: "Salad" },
-    'манты': { uz: "Manti", ru: "Манты", en: "Mantu" },
-    'manti': { uz: "Manti", ru: "Манты", en: "Mantu" },
-    'самса': { uz: "Somsa", ru: "Самса", en: "Samosa" },
-    'somsa': { uz: "Somsa", ru: "Самса", en: "Samosa" },
-  };
-
+  // The stored translations are the source of truth. A hard-coded client-side
+  // dictionary used to override them, so a name corrected in the admin panel was
+  // silently replaced by the dictionary entry on every render.
   const getLocalized = (uz, ru, en) => {
     const lang = (i18n.language || 'uz').toLowerCase();
-    
-    // Check fallback dictionary
-    const key = (uz || ru || en || '').toLowerCase().trim();
-    if (FOOD_FALLBACKS[key]) {
-      if (lang.startsWith('ru')) return FOOD_FALLBACKS[key].ru;
-      if (lang.startsWith('en')) return FOOD_FALLBACKS[key].en;
-      return FOOD_FALLBACKS[key].uz;
-    }
-
     if (lang.startsWith('ru')) return ru || uz || en;
     if (lang.startsWith('en')) return en || uz || ru;
     return uz || ru || en;
@@ -62,29 +37,15 @@ export default function ProductCardAdmin({
       await duplicateProduct(product.id);
       onRefresh();
     } catch (err) {
-      alert('Nusxa olishda xatolik: ' + err.message);
+      onError?.(describeApiError(err));
     } finally {
       setLoadingAction(false);
     }
   };
 
-  const handleDelete = async (e) => {
+  const handleDelete = (e) => {
     e.stopPropagation();
-    if (onDeleteSingle) {
-      onDeleteSingle(product);
-    } else {
-      if (window.confirm(t('admin.confirm_delete_product'))) {
-        setLoadingAction(true);
-        try {
-          await deleteProduct(product.id);
-          onRefresh();
-        } catch (err) {
-          alert('O\'chirishda xatolik: ' + err.message);
-        } finally {
-          setLoadingAction(false);
-        }
-      }
-    }
+    onDeleteSingle?.(product);
   };
 
   const imageUrl = (!imgError && (product.effective_image_url || product.image || product.image_url))
@@ -163,7 +124,7 @@ export default function ProductCardAdmin({
           
           <div className="flex items-baseline justify-between mb-2">
             <span className="text-mehmon-gold font-bold text-lg font-sans">
-              {Number(product.price).toLocaleString()} UZS
+              {Number(product.price || 0).toLocaleString('uz-UZ')} UZS
             </span>
           </div>
         </div>

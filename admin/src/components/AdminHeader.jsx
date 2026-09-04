@@ -1,12 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { Globe, LogOut, ShieldCheck, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminHeader() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme, isLight } = useTheme();
+  const { user, logout } = useAuth();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langMenuRef = useRef(null);
+
+  // Close the language dropdown on an outside click or Escape; it used to stay
+  // open until the user happened to click the toggle again.
+  useEffect(() => {
+    if (!langMenuOpen) return undefined;
+    const handlePointerDown = (event) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target)) {
+        setLangMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setLangMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [langMenuOpen]);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   const languages = [
     { code: 'uz', label: 'UZ', full: 'O\'zbekcha' },
@@ -50,7 +83,7 @@ export default function AdminHeader() {
         <div className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-mehmon-card border border-mehmon-border shadow-inner">
           <ShieldCheck className="w-4 h-4 text-mehmon-gold" />
           <span className="text-sm font-medium text-mehmon-text">
-            {t('admin.welcome')}
+            {user?.username ? t('admin.welcome_user', { username: user.username }) : t('admin.welcome')}
           </span>
         </div>
 
@@ -86,9 +119,11 @@ export default function AdminHeader() {
           </button>
 
           {/* Language Selector */}
-          <div className="relative">
+          <div className="relative" ref={langMenuRef}>
             <button
               onClick={() => setLangMenuOpen(!langMenuOpen)}
+              aria-haspopup="listbox"
+              aria-expanded={langMenuOpen}
               className="flex items-center gap-2 bg-mehmon-card hover:bg-mehmon-card-hover text-mehmon-text px-3.5 py-2 rounded-full border border-mehmon-border hover:border-mehmon-gold transition-all text-xs font-semibold"
             >
               <Globe className="w-4 h-4 text-mehmon-gold" />
@@ -114,6 +149,18 @@ export default function AdminHeader() {
               </div>
             )}
           </div>
+
+          {/* Sign out */}
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title={t('auth.sign_out')}
+            aria-label={t('auth.sign_out')}
+            className="flex items-center gap-1.5 bg-mehmon-card hover:bg-red-500/15 text-rose-500 px-3 py-2 rounded-full border border-mehmon-border hover:border-red-500/40 transition-all text-xs font-semibold disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('auth.sign_out')}</span>
+          </button>
 
         </div>
 
